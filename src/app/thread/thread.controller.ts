@@ -12,19 +12,17 @@ import {
   HttpException,
   HttpStatus,
   UploadedFile,
-  UseGuards,
   BadRequestException,
 } from '@nestjs/common';
 import { ThreadsService } from './thread.service';
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
-import { createThreadDto, PagingQueryDto, ThreadUpdateDto } from './thread.dto';
+import { AddMembersDto, createThreadDto, PagingQueryDto, ThreadUpdateDto } from './thread.dto';
 import { MessageResponseInterceptor, ResponseInterceptor } from 'src/helpers/interceptors/respone.interceptor';
 import { ResponseMessage } from 'src/helpers/decorators/response.message';
 import { diskStorage } from 'multer';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Req } from '@nestjs/common';
 import { Request } from 'express';
-import { ThreadVisibilityType } from '@app/helpers/types/thread';
 
 @Controller('threads')
 @ApiTags('threads')
@@ -76,30 +74,28 @@ export class ThreadsController {
   }
 
   @Get('/getByOwner/:ownerId')
-@UseInterceptors(ResponseInterceptor)
-@ResponseMessage('Threads fetched by owner ID')
-async getThreadsByOwnerId(@Param('ownerId') ownerId: string) {
-  if (!ownerId) {
-    throw new BadRequestException('Owner ID is required');
+  @UseInterceptors(ResponseInterceptor)
+  @ResponseMessage('Threads fetched by owner ID')
+  async getThreadsByOwnerId(@Param('ownerId') ownerId: string) {
+    if (!ownerId) {
+      throw new BadRequestException('Owner ID is required');
+    }
+
+    const threads = await this.threadService.getThreadsByOwnerId(ownerId);
+    return threads;
   }
 
-  const threads = await this.threadService.getThreadsByOwnerId(ownerId);
-  return threads;
-}
+  @Get('/getByMember/:memberId')
+  @UseInterceptors(ResponseInterceptor)
+  @ResponseMessage('Threads fetched by member ID')
+  async getThreadsByMemberId(@Param('memberId') memberId: string) {
+    if (!memberId) {
+      throw new BadRequestException('Member ID is required');
+    }
 
-
-@Get('/getByMember/:memberId')
-@UseInterceptors(ResponseInterceptor)
-@ResponseMessage('Threads fetched by member ID')
-async getThreadsByMemberId(@Param('memberId') memberId: string) {
-  if (!memberId) {
-    throw new BadRequestException('Member ID is required');
+    const threads = await this.threadService.getThreadsByMemberId(memberId);
+    return threads;
   }
-
-  const threads = await this.threadService.getThreadsByMemberId(memberId);
-  return threads;
-}
-
 
   @Put('/updateThread/:id')
   @UseInterceptors(MessageResponseInterceptor)
@@ -152,18 +148,28 @@ async getThreadsByMemberId(@Param('memberId') memberId: string) {
     return await this.threadService.addImage(id, avatar);
   }
 
-  @Post('/scan/:threadId')
+  @Post('/:threadId/add-members')
   @UseInterceptors(ResponseInterceptor)
-  @ResponseMessage('Successfully joined thread')
-  async scanThread(
-    @Param('threadId') threadId: string,
-    @Req() req: Request, // Use @Req() decorator and type it with Request from express
-  ) {
-    // Assuming you have user information in req.user after authentication
-    const userId = req.user._id; // Adjust based on your auth setup
+  @ResponseMessage('Members added to thread successfully')
+  async addMembersToThread(@Param('threadId') threadId: string, @Body() addMembersDto: AddMembersDto) {
+    if (!threadId) {
+      throw new BadRequestException('Thread ID is required');
+    }
 
-    const thread = await this.threadService.addMemberToThread(threadId, userId);
-    return thread;
+    const updatedThread = await this.threadService.addMembersToThread(threadId, addMembersDto.memberIds);
+    return updatedThread;
+  }
+
+  @Delete('/:threadId/remove-members')
+  @UseInterceptors(ResponseInterceptor)
+  @ResponseMessage('Members removed from thread successfully')
+  async removeMembersFromThread(@Param('threadId') threadId: string, @Body() removeMembersDto: AddMembersDto) {
+    if (!threadId) {
+      throw new BadRequestException('Thread ID is required');
+    }
+
+    const updatedThread = await this.threadService.removeMembersFromThread(threadId, removeMembersDto.memberIds);
+    return updatedThread;
   }
 
   // @Delete('/deleteAll')

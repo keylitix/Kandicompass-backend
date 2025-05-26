@@ -184,106 +184,104 @@ export class ThreadsService {
   }
 
   async getThreadsByOwnerId(ownerId: string): Promise<Thread[]> {
-  if (!Types.ObjectId.isValid(ownerId)) {
-    throw new HttpException('Invalid owner ID', HttpStatus.BAD_REQUEST);
+    if (!Types.ObjectId.isValid(ownerId)) {
+      throw new HttpException('Invalid owner ID', HttpStatus.BAD_REQUEST);
+    }
+
+    const threads = await this.threadModel.aggregate([
+      {
+        $match: {
+          ownerId: new Types.ObjectId(ownerId),
+          is_deleted: false,
+        },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'ownerId',
+          foreignField: '_id',
+          as: 'owner',
+        },
+      },
+      {
+        $unwind: {
+          path: '$owner',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $lookup: {
+          from: 'beads',
+          localField: 'beads',
+          foreignField: '_id',
+          as: 'beads',
+        },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'members',
+          foreignField: '_id',
+          as: 'members',
+        },
+      },
+      {
+        $addFields: {
+          memberCount: { $size: '$members' },
+        },
+      },
+    ]);
+
+    return threads;
   }
 
-  const threads = await this.threadModel.aggregate([
-    {
-      $match: {
-        ownerId: new Types.ObjectId(ownerId),
-        is_deleted: false,
+  async getThreadsByMemberId(memberId: string): Promise<Thread[]> {
+    const threads = await this.threadModel.aggregate([
+      {
+        $match: {
+          members: memberId,
+          is_deleted: false,
+        },
       },
-    },
-    {
-      $lookup: {
-        from: 'users',
-        localField: 'ownerId',
-        foreignField: '_id',
-        as: 'owner',
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'ownerId',
+          foreignField: '_id',
+          as: 'owner',
+        },
       },
-    },
-    {
-      $unwind: {
-        path: '$owner',
-        preserveNullAndEmptyArrays: true,
+      {
+        $unwind: {
+          path: '$owner',
+          preserveNullAndEmptyArrays: true,
+        },
       },
-    },
-    {
-      $lookup: {
-        from: 'beads',
-        localField: 'beads',
-        foreignField: '_id',
-        as: 'beads',
+      {
+        $lookup: {
+          from: 'beads',
+          localField: 'beads',
+          foreignField: '_id',
+          as: 'beads',
+        },
       },
-    },
-    {
-      $lookup: {
-        from: 'users',
-        localField: 'members',
-        foreignField: '_id',
-        as: 'members',
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'members',
+          foreignField: '_id',
+          as: 'members',
+        },
       },
-    },
-    {
-      $addFields: {
-        memberCount: { $size: '$members' },
-      },
-    },
-  ]);
+      // {
+      //   $addFields: {
+      //     memberCount: { $size: '$members' },
+      //   },
+      // },
+    ]);
 
-  return threads;
-}
-
-
-async getThreadsByMemberId(memberId: string): Promise<Thread[]> {
-  const threads = await this.threadModel.aggregate([
-    {
-      $match: {
-        members: memberId,
-        is_deleted: false,
-      },
-    },
-    {
-      $lookup: {
-        from: 'users',
-        localField: 'ownerId',
-        foreignField: '_id',
-        as: 'owner',
-      },
-    },
-    {
-      $unwind: {
-        path: '$owner',
-        preserveNullAndEmptyArrays: true,
-      },
-    },
-    {
-      $lookup: {
-        from: 'beads',
-        localField: 'beads',
-        foreignField: '_id',
-        as: 'beads',
-      },
-    },
-    {
-      $lookup: {
-        from: 'users',
-        localField: 'members',
-        foreignField: '_id',
-        as: 'members',
-      },
-    },
-    // {
-    //   $addFields: {
-    //     memberCount: { $size: '$members' },
-    //   },
-    // },
-  ]);
-
-  return threads;
-}
-
+    return threads;
+  }
 
   async updateThread<T>(id: T | string, model: ThreadUpdateDto): Promise<Thread> {
     const thread = await this.threadModel.findById({ _id: id });
@@ -340,18 +338,56 @@ async getThreadsByMemberId(memberId: string): Promise<Thread[]> {
     return user;
   }
 
-  async addMemberToThread(threadId: string, userId: string): Promise<Thread> {
+  async addMembersToThread(threadId: string, memberIds: string[]): Promise<Thread> {
+    if (!Types.ObjectId.isValid(threadId)) {
+      throw new HttpException('Invalid thread ID', HttpStatus.BAD_REQUEST);
+    }
+
+    const invalidMemberIds = memberIds.filter(id => !Types.ObjectId.isValid(id));
+    if (invalidMemberIds.length > 0) {
+      throw new HttpException(`Invalid member IDs: ${invalidMemberIds.join(', ')}`, HttpStatus.BAD_REQUEST);
+    }
+
     const thread = await this.threadModel.findById(threadId);
     if (!thread) {
       throw new HttpException('Thread not found', HttpStatus.NOT_FOUND);
     }
 
-    // Check if user is already a member
-    if (!thread.members.includes(userId)) {
-      thread.members.push(userId);
-      await thread.save();
+    const memberObjectIds = memberIds.map(id => new Types.ObjectId(id));
+
+    const existingMemberIds = thread.members.map(member => member.toString());
+    const newMembers = memberObjectIds.filter(memberId => !existingMemberIds.includes(memberId.toString()));
+
+    if (newMembers.length === 0) {
+      throw new HttpException('All provided members are already in the thread', HttpStatus.BAD_REQUEST);
     }
 
+    thread.members = [...thread.members, ...newMembers];
+    await thread.save();
+
+    return thread;
+  }
+
+  async removeMembersFromThread(threadId: string, memberIds: string[]): Promise<Thread> {
+    if (!Types.ObjectId.isValid(threadId)) {
+      throw new HttpException('Invalid thread ID', HttpStatus.BAD_REQUEST);
+    }
+
+    const invalidMemberIds = memberIds.filter(id => !Types.ObjectId.isValid(id));
+    if (invalidMemberIds.length > 0) {
+      throw new HttpException(`Invalid member IDs: ${invalidMemberIds.join(', ')}`, HttpStatus.BAD_REQUEST);
+    }
+
+    const thread = await this.threadModel.findById(threadId);
+    if (!thread) {
+      throw new HttpException('Thread not found', HttpStatus.NOT_FOUND);
+    }
+
+    const memberObjectIds = memberIds.map(id => new Types.ObjectId(id));
+
+    thread.members = thread.members.filter(memberId => !memberObjectIds.some(id => id.equals(memberId)));
+
+    await thread.save();
     return thread;
   }
 

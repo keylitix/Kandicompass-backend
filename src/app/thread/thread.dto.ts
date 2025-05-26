@@ -1,9 +1,6 @@
 import { ThreadVisibilityType } from '@app/helpers/types/thread';
 import { ApiProperty } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
-import { IsString, IsOptional, IsEnum, IsArray, ValidateNested } from 'class-validator';
-import { CreateUserDto } from '../user/user.dto';
-import { createBeadDto } from '../bead/bead.dto';
+import { IsString, IsOptional, IsEnum, IsArray } from 'class-validator';
 export class createThreadDto {
   @ApiProperty()
   @IsString()
@@ -42,6 +39,24 @@ export class PagingQueryDto {
   @ApiProperty()
   page_size: number;
 }
+
+export class createMessageDto {
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  name: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  email: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  message: string;
+}
+
 export class ThreadUpdateDto {
   @ApiProperty()
   @IsString()
@@ -57,4 +72,11 @@ export class ThreadUpdateDto {
   // @IsOptional()
   // @ApiProperty()
   // charmLocation: string;
+}
+
+export class AddMembersDto {
+  @ApiProperty()
+  @IsArray()
+  @IsString({ each: true })
+  memberIds: string[];
 }

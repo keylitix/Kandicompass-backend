@@ -19,8 +19,8 @@ export class Thread {
   @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Bead' }], default: [] })
   beads: Bead[];
 
-  @Prop({ type: [String], default: [] })
-  members: string[];
+  @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], default: [] })
+  members: mongoose.Types.ObjectId[];
 
   @Prop()
   visibility: string;
