@@ -8,11 +8,15 @@ import { isValidString } from 'src/utils/string';
 import * as QRCode from 'qrcode';
 import * as path from 'path';
 import * as fs from 'fs';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class ThreadsService {
   private readonly logger = new Logger(ThreadsService.name);
-  constructor(@InjectModel(Thread.name) private threadModel: Model<Thread>) {}
+  constructor(
+    @InjectModel(Thread.name) private threadModel: Model<Thread>,
+    @InjectModel('ThreadInvite') private inviteModel: Model<any>,
+  ) {}
 
   private async generateQRCode(link: string, threadId: string): Promise<string> {
     try {
@@ -389,6 +393,76 @@ export class ThreadsService {
 
     await thread.save();
     return thread;
+  }
+
+  async createInvite(threadId: string, email?: string): Promise<{ inviteId: string; token: string }> {
+    const thread = await this.threadModel.findById(threadId);
+    if (!thread) {
+      throw new HttpException('Thread not found', HttpStatus.NOT_FOUND);
+    }
+
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+    const invite = await this.inviteModel.create({
+      threadId,
+      threadName: thread.threadName,
+      email,
+      token,
+      expiresAt,
+      status: 'pending',
+      createdAt: new Date(),
+    });
+
+    return {
+      inviteId: invite._id.toString(),
+      token: invite.token,
+    };
+  }
+
+  async respondToInvite(inviteId: string, userId: string, accept: boolean) {
+    if (!Types.ObjectId.isValid(inviteId)) {
+      throw new HttpException('Invalid invite ID format', HttpStatus.BAD_REQUEST);
+    }
+
+    const invite = await this.inviteModel.findById(inviteId);
+    if (!invite) {
+      throw new HttpException('Invite not found', HttpStatus.NOT_FOUND);
+    }
+
+    if (invite.status !== 'pending') {
+      throw new HttpException('Invite already processed', HttpStatus.BAD_REQUEST);
+    }
+
+    if (new Date() > invite.expiresAt) {
+      throw new HttpException('Invite has expired', HttpStatus.BAD_REQUEST);
+    }
+
+    if (accept) {
+      await this.threadModel.findByIdAndUpdate(invite.threadId, { $addToSet: { members: new Types.ObjectId(userId) } });
+    }
+
+    invite.status = accept ? 'accepted' : 'declined';
+    await invite.save();
+
+    return {
+      success: true,
+      threadId: invite.threadId,
+      status: invite.status,
+    };
+  }
+
+  async getInviteById(inviteId: string): Promise<any> {
+    if (!Types.ObjectId.isValid(inviteId)) {
+      throw new HttpException('Invalid invite ID', HttpStatus.BAD_REQUEST);
+    }
+
+    const invite = await this.inviteModel.findById(inviteId);
+    if (!invite) {
+      throw new HttpException('Invite not found', HttpStatus.NOT_FOUND);
+    }
+
+    return invite;
   }
 
   // async removeAllThreads(): Promise<void> {

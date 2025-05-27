@@ -16,7 +16,14 @@ import {
 } from '@nestjs/common';
 import { ThreadsService } from './thread.service';
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
-import { AddMembersDto, createThreadDto, PagingQueryDto, ThreadUpdateDto } from './thread.dto';
+import {
+  AddMembersDto,
+  CreateInviteDto,
+  createThreadDto,
+  PagingQueryDto,
+  RespondToInviteDto,
+  ThreadUpdateDto,
+} from './thread.dto';
 import { MessageResponseInterceptor, ResponseInterceptor } from 'src/helpers/interceptors/respone.interceptor';
 import { ResponseMessage } from 'src/helpers/decorators/response.message';
 import { diskStorage } from 'multer';
@@ -170,6 +177,32 @@ export class ThreadsController {
 
     const updatedThread = await this.threadService.removeMembersFromThread(threadId, removeMembersDto.memberIds);
     return updatedThread;
+  }
+
+  @Post('/create-invite')
+  @UseInterceptors(ResponseInterceptor)
+  @ResponseMessage('Invite created successfully')
+  async createInvite(@Body() createInviteDto: CreateInviteDto, @Req() req: Request) {
+    const result = await this.threadService.createInvite(createInviteDto.threadId, createInviteDto.email);
+
+    return {
+      inviteId: result.inviteId,
+      token: result.token,
+      // Include this in your frontend URL: `/accept-invite?token=${result.token}`
+    };
+  }
+
+  @Post('/respond-to-invite')
+  @UseInterceptors(ResponseInterceptor)
+  @ResponseMessage('Invitation response processed')
+  @ApiBody({ type: RespondToInviteDto })
+  async respondToInvite(@Body() body: RespondToInviteDto, @Req() req: Request) {
+    const userId = (req.user as any)?._id;
+    // if (!userId) {
+    //   throw new BadRequestException('Authentication required');
+    // }
+
+    return await this.threadService.respondToInvite(body.inviteId, userId, body.accept);
   }
 
   // @Delete('/deleteAll')
