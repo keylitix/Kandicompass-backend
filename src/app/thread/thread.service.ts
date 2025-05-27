@@ -465,6 +465,38 @@ export class ThreadsService {
     return invite;
   }
 
+  async getInvitationsByEmail(email: string): Promise<any[]> {
+    if (!email || !email.includes('@')) {
+      throw new HttpException('Invalid email format', HttpStatus.BAD_REQUEST);
+    }
+
+    const invites = await this.inviteModel.aggregate([
+      {
+        $match: {
+          email: email,
+          status: 'pending',
+          // expiresAt: { $gt: new Date() } // Only include non-expired invites
+        },
+      },
+      // {
+      //   $lookup: {
+      //     from: 'threads',
+      //     localField: 'threadId',
+      //     foreignField: '_id',
+      //     as: 'threadId'
+      //   }
+      // },
+      // { $unwind: '$threadId' },
+      { $sort: { createdAt: -1 } },
+    ]);
+
+    if (!invites || invites.length === 0) {
+      throw new HttpException('No pending invitations found for this email', HttpStatus.NOT_FOUND);
+    }
+
+    return invites;
+  }
+
   // async removeAllThreads(): Promise<void> {
   //   await this.threadModel.deleteMany({}, { $set: { is_deleted: true } });
   // }

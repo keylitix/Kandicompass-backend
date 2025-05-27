@@ -11,6 +11,67 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
+class NotificationsDto {
+  @IsOptional()
+  @IsBoolean()
+  @ApiPropertyOptional({ default: true })
+  email?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  @ApiPropertyOptional({ default: true })
+  push?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  @ApiPropertyOptional({ default: false })
+  sms?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  @ApiPropertyOptional({ default: false })
+  marketing?: boolean;
+}
+
+class PrivacyDto {
+  @IsOptional()
+  @IsBoolean()
+  @ApiPropertyOptional({ default: true })
+  profileVisible?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  @ApiPropertyOptional({ default: false })
+  showEmail?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  @ApiPropertyOptional({ default: false })
+  showPhone?: boolean;
+}
+
+class LocationDto {
+  @IsOptional()
+  @IsNumber()
+  @ApiPropertyOptional({ default: 0.0 })
+  lat?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @ApiPropertyOptional({ default: 0.0 })
+  lon?: number;
+
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional({ default: '' })
+  city?: string;
+
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional({ default: '' })
+  country?: string;
+}
+
 enum GenderEnum {
   MALE = 'male',
   FEMALE = 'female',
@@ -358,6 +419,29 @@ export class CreateUserDto {
   @IsBoolean()
   @ApiPropertyOptional({ default: false })
   is_deleted?: boolean;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => NotificationsDto)
+  @ApiPropertyOptional()
+  notifications?: NotificationsDto;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => PrivacyDto)
+  @ApiPropertyOptional()
+  privacy?: PrivacyDto;
+
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional()
+  bio?: string;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => LocationDto)
+  @ApiPropertyOptional()
+  location?: LocationDto;
 }
 
 export class PagingQueryDto {
@@ -540,6 +624,29 @@ export class UpdateUserDto {
   @IsBoolean()
   @ApiPropertyOptional()
   is_deleted?: boolean;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => NotificationsDto)
+  @ApiPropertyOptional()
+  notifications?: NotificationsDto;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => PrivacyDto)
+  @ApiPropertyOptional()
+  privacy?: PrivacyDto;
+
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional()
+  bio?: string;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => LocationDto)
+  @ApiPropertyOptional()
+  location?: LocationDto;
 }
 export class fileUploadDto {
   @ApiProperty({ type: 'string', format: 'binary' })

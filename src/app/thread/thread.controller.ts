@@ -205,6 +205,18 @@ export class ThreadsController {
     return await this.threadService.respondToInvite(body.inviteId, userId, body.accept);
   }
 
+  @Get('/get-invitations-by-email/:email')
+  @UseInterceptors(ResponseInterceptor)
+  @ResponseMessage('Thread invitations fetched by email')
+  async getInvitationsByEmail(@Param('email') email: string) {
+    if (!email) {
+      throw new BadRequestException('Email is required');
+    }
+
+    const invitations = await this.threadService.getInvitationsByEmail(email);
+    return invitations;
+  }
+
   // @Delete('/deleteAll')
   // @UseInterceptors(MessageResponseInterceptor)
   // @ResponseMessage('All threads removed')

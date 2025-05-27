@@ -45,6 +45,10 @@ export class UserService {
       otp,
       device_token,
       is_deleted,
+      notifications,
+      bio,
+      privacy,
+      location,
     } = model;
 
     const user = new this.userModel({
@@ -75,6 +79,10 @@ export class UserService {
       otp,
       device_token,
       is_deleted: is_deleted || false,
+      notifications,
+      bio,
+      privacy,
+      location,
     }).save();
 
     return user;

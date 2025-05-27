@@ -151,6 +151,69 @@ export class User {
   avatar: string;
 
   @Prop({
+    type: {
+      email: { type: Boolean, default: true },
+      push: { type: Boolean, default: true },
+      sms: { type: Boolean, default: false },
+      marketing: { type: Boolean, default: false },
+    },
+    default: {
+      email: true,
+      push: true,
+      sms: false,
+      marketing: false,
+    },
+  })
+  notifications: {
+    email: boolean;
+    push: boolean;
+    sms: boolean;
+    marketing: boolean;
+  };
+
+  @Prop({
+    type: {
+      profileVisible: { type: Boolean, default: true },
+      showEmail: { type: Boolean, default: false },
+      showPhone: { type: Boolean, default: false },
+    },
+    default: {
+      profileVisible: true,
+      showEmail: false,
+      showPhone: false,
+    },
+  })
+  privacy: {
+    profileVisible: boolean;
+    showEmail: boolean;
+    showPhone: boolean;
+  };
+
+  @Prop({ required: false, trim: true })
+  bio: string;
+
+  @Prop({
+    type: {
+      lat: { type: Number, default: 0.0 },
+      lon: { type: Number, default: 0.0 },
+      city: { type: String, default: '', trim: true },
+      country: { type: String, default: '', trim: true },
+    },
+    default: {
+      lat: 0.0,
+      lon: 0.0,
+      city: '',
+      country: '',
+    },
+  })
+  location: {
+    lat: number;
+    lon: number;
+    city: string;
+    country: string;
+  };
+
+  @Prop({
     required: false,
     type: [Object],
   })
