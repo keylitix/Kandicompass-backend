@@ -255,7 +255,7 @@ export class ThreadsService {
     const threads = await this.threadModel.aggregate([
       {
         $match: {
-          members: memberId,
+          members:  new Types.ObjectId(memberId),
           is_deleted: false,
         },
       },
