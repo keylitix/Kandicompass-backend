@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, Types } from 'mongoose';
 
 @Schema({ timestamps: true })
 export class ThreadInvite {
@@ -17,6 +17,9 @@ export class ThreadInvite {
 
   @Prop({ default: 'pending' })
   status: 'pending' | 'accepted' | 'declined';
+
+  @Prop({ type: Types.ObjectId, ref: 'User', required: false })
+  userId: Types.ObjectId;
 
   @Prop()
   token: string;

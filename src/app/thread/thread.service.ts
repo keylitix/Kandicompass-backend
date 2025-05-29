@@ -9,6 +9,7 @@ import * as QRCode from 'qrcode';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as crypto from 'crypto';
+import { User } from '@app/models/user.schema';
 
 @Injectable()
 export class ThreadsService {
@@ -16,6 +17,7 @@ export class ThreadsService {
   constructor(
     @InjectModel(Thread.name) private threadModel: Model<Thread>,
     @InjectModel('ThreadInvite') private inviteModel: Model<any>,
+    @InjectModel(User.name) private userModel: Model<User>,
   ) {}
 
   private async generateQRCode(link: string, threadId: string): Promise<string> {
@@ -54,7 +56,7 @@ export class ThreadsService {
     }).save();
 
     const threadId = new Types.ObjectId().toString();
-    const qrCodeUrl = `https://kandi-web.cradle.services/dashboard/thread/${threadId.toString()}`;
+    const qrCodeUrl = ` https://app.kandicompass.com/dashboard/thread/${threadId.toString()}?jt=HbdhyKPt5JK66yXIuo81ufgPRlOhivFiwj5PDVm2bmimcSEjWBOcQi`;
     const qrCode = await this.generateQRCode(qrCodeUrl, thread._id.toString());
 
     thread.qrCode = qrCode;
@@ -74,7 +76,7 @@ export class ThreadsService {
       beads: beads || [],
     }).save();
 
-    const qrCodeUrl = `https://kandi-web.cradle.services/dashboard/thread/${thread._id.toString()}`;
+    const qrCodeUrl = ` https://app.kandicompass.com/dashboard/thread/${thread._id.toString()}?jt=HbdhyKPt5JK66yXIuo81ufgPRlOhivFiwj5PDVm2bmimcSEjWBOcQi`;
     const qrCode = await this.generateQRCode(qrCodeUrl, thread._id.toString());
 
     thread.qrCode = qrCode;
@@ -133,6 +135,8 @@ export class ThreadsService {
       {
         $addFields: {
           memberCount: { $size: '$members' },
+          totalMembers: { $size: '$members' },
+          totalBeads: { $size: '$beads' },
         },
       },
       { $skip: skip },
@@ -158,15 +162,15 @@ export class ThreadsService {
           is_deleted: false,
         },
       },
-      {
-        $lookup: {
-          from: 'users',
-          localField: 'ownerId',
-          foreignField: '_id',
-          as: 'owner',
-        },
-      },
-      { $unwind: '$owner' },
+      // {
+      //   $lookup: {
+      //     from: 'users',
+      //     localField: 'ownerId',
+      //     foreignField: '_id',
+      //     as: 'owner',
+      //   },
+      // },
+      // { $unwind: '$owner' },
       {
         $lookup: {
           from: 'beads',
@@ -181,6 +185,12 @@ export class ThreadsService {
           localField: 'members',
           foreignField: '_id',
           as: 'members',
+        },
+      },
+      {
+        $addFields: {
+          totalMembers: { $size: '$members' },
+          totalBeads: { $size: '$beads' },
         },
       },
     ]);
@@ -232,6 +242,8 @@ export class ThreadsService {
       {
         $addFields: {
           memberCount: { $size: '$members' },
+          totalMembers: { $size: '$members' },
+          totalBeads: { $size: '$beads' },
         },
       },
     ]);
@@ -277,11 +289,12 @@ export class ThreadsService {
           as: 'members',
         },
       },
-      // {
-      //   $addFields: {
-      //     memberCount: { $size: '$members' },
-      //   },
-      // },
+      {
+        $addFields: {
+          totalMembers: { $size: '$members' },
+          totalBeads: { $size: '$beads' },
+        },
+      },
     ]);
 
     return threads;
@@ -404,10 +417,41 @@ export class ThreadsService {
     const token = crypto.randomBytes(32).toString('hex');
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
+    let userId = null;
+    if (email) {
+      const user = await this.userModel.findOne({ email });
+      if (user) {
+        userId = user._id;
+
+        // ✅ Check for existing pending invite by threadId and userId
+        const existingInvite = await this.inviteModel.findOne({
+          threadId,
+          userId,
+          status: 'pending',
+        });
+
+        if (existingInvite) {
+          throw new HttpException('A pending invite already exists for this user and thread', HttpStatus.CONFLICT);
+        }
+      } else {
+        // ✅ Check for existing pending invite by threadId and email if user not found
+        const existingInvite = await this.inviteModel.findOne({
+          threadId,
+          email,
+          status: 'pending',
+        });
+
+        if (existingInvite) {
+          throw new HttpException('A pending invite already exists for this email and thread', HttpStatus.CONFLICT);
+        }
+      }
+    }
+
     const invite = await this.inviteModel.create({
       threadId,
       threadName: thread.threadName,
       email,
+      userId,
       token,
       expiresAt,
       status: 'pending',
@@ -420,7 +464,7 @@ export class ThreadsService {
     };
   }
 
-  async respondToInvite(inviteId: string, userId: string, accept: boolean) {
+  async respondToInvite(inviteId: string, _: string, accept: boolean) {
     if (!Types.ObjectId.isValid(inviteId)) {
       throw new HttpException('Invalid invite ID format', HttpStatus.BAD_REQUEST);
     }
@@ -439,7 +483,36 @@ export class ThreadsService {
     }
 
     if (accept) {
-      await this.threadModel.findByIdAndUpdate(invite.threadId, { $addToSet: { members: new Types.ObjectId(userId) } });
+      if (!invite.userId) {
+        throw new HttpException('Invite does not have a userId to add to the thread', HttpStatus.BAD_REQUEST);
+      }
+
+      const thread = await this.threadModel.findById(invite.threadId);
+
+      if (!thread) {
+        throw new HttpException('Thread not found', HttpStatus.NOT_FOUND);
+      }
+
+      // ✅ Check if user is already a member
+      const isAlreadyMember = thread.members?.some(memberId => memberId.toString() === invite.userId.toString());
+
+      if (isAlreadyMember) {
+        // Update status just for recordkeeping
+        invite.status = 'accepted';
+        await invite.save();
+
+        return {
+          success: true,
+          threadId: invite.threadId,
+          status: 'accepted',
+          message: 'User is already a member of the thread',
+        };
+      }
+
+      // Add user to thread if not already a member
+      await this.threadModel.findByIdAndUpdate(invite.threadId, {
+        $addToSet: { members: new Types.ObjectId(invite.userId) },
+      });
     }
 
     invite.status = accept ? 'accepted' : 'declined';
@@ -474,7 +547,7 @@ export class ThreadsService {
       {
         $match: {
           email: email,
-          status: 'pending',
+          // status: 'pending',
           // expiresAt: { $gt: new Date() } // Only include non-expired invites
         },
       },

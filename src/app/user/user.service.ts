@@ -228,6 +228,10 @@ export class UserService {
       user.role = model.role;
     }
 
+    if (isValidString(model.bio)) {
+      user.bio = model.bio;
+    }
+
     if (isValidString(model.accountStatus)) {
       user.accountStatus = model.accountStatus;
     }
@@ -291,6 +295,47 @@ export class UserService {
       user.is_deleted = model.is_deleted;
     }
 
+    if (model.notifications) {
+      if (model.notifications.email !== undefined) {
+        user.notifications.email = model.notifications.email;
+      }
+      if (model.notifications.push !== undefined) {
+        user.notifications.push = model.notifications.push;
+      }
+      if (model.notifications.sms !== undefined) {
+        user.notifications.sms = model.notifications.sms;
+      }
+      if (model.notifications.marketing !== undefined) {
+        user.notifications.marketing = model.notifications.marketing;
+      }
+    }
+
+    if (model.privacy) {
+      if (model.privacy.profileVisible !== undefined) {
+        user.privacy.profileVisible = model.privacy.profileVisible;
+      }
+      if (model.privacy.showEmail !== undefined) {
+        user.privacy.showEmail = model.privacy.showEmail;
+      }
+      if (model.privacy.showPhone !== undefined) {
+        user.privacy.showPhone = model.privacy.showPhone;
+      }
+    }
+
+    if (model.location) {
+      if (model.location.lat !== undefined) {
+        user.location.lat = model.location.lat;
+      }
+      if (model.location.lon !== undefined) {
+        user.location.lon = model.location.lon;
+      }
+      if (isValidString(model.location.city)) {
+        user.location.city = model.location.city;
+      }
+      if (isValidString(model.location.country)) {
+        user.location.country = model.location.country;
+      }
+    }
     user.updated_at = new Date();
     await user.save();
     return user;

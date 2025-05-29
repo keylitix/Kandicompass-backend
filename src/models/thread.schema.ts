@@ -10,7 +10,7 @@ export class Thread {
   @Prop()
   description: string;
 
-  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true })
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: false })
   ownerId: User;
 
   @Prop()
