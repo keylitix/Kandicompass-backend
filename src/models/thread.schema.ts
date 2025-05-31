@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory, raw } from '@nestjs/mongoose';
-import mongoose, { HydratedDocument } from 'mongoose';
+import mongoose, { HydratedDocument, Types } from 'mongoose';
 import { User } from './user.schema';
 import { Bead } from './bead.schema';
 @Schema()
@@ -11,7 +11,7 @@ export class Thread {
   description: string;
 
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: false })
-  ownerId: User;
+  ownerId: Types.ObjectId;
 
   @Prop()
   qrCode: string;

@@ -11,7 +11,6 @@ import {
   UseInterceptors,
   HttpException,
   HttpStatus,
-  UploadedFile,
   UploadedFiles,
 } from '@nestjs/common';
 import { BeadsService } from './bead.service';
@@ -20,7 +19,7 @@ import { createBeadDto, PagingQueryDto, BeadUpdateDto } from './bead.dto';
 import { MessageResponseInterceptor, ResponseInterceptor } from 'src/helpers/interceptors/respone.interceptor';
 import { ResponseMessage } from 'src/helpers/decorators/response.message';
 import { diskStorage } from 'multer';
-import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
+import { FilesInterceptor } from '@nestjs/platform-express';
 
 @Controller('beads')
 @ApiTags('beads')

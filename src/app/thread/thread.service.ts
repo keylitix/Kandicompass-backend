@@ -10,6 +10,8 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as crypto from 'crypto';
 import { User } from '@app/models/user.schema';
+import { BeadPurchaseRequest } from '@app/models/beadPurchaseRequest.schema';
+import { Bead } from '@app/models/bead.schema';
 
 @Injectable()
 export class ThreadsService {
@@ -18,6 +20,8 @@ export class ThreadsService {
     @InjectModel(Thread.name) private threadModel: Model<Thread>,
     @InjectModel('ThreadInvite') private inviteModel: Model<any>,
     @InjectModel(User.name) private userModel: Model<User>,
+    @InjectModel(Bead.name) private beadModel: Model<Bead>,
+    @InjectModel(BeadPurchaseRequest.name) private beadPurchaseRequestModel: Model<BeadPurchaseRequest>,
   ) {}
 
   private async generateQRCode(link: string, threadId: string): Promise<string> {
@@ -255,7 +259,7 @@ export class ThreadsService {
     const threads = await this.threadModel.aggregate([
       {
         $match: {
-          members:  new Types.ObjectId(memberId),
+          members: new Types.ObjectId(memberId),
           is_deleted: false,
         },
       },
@@ -568,6 +572,210 @@ export class ThreadsService {
     }
 
     return invites;
+  }
+
+  async createBeadPurchaseRequest(
+    threadId: string,
+    beadId: string,
+    buyerId: string,
+    offerPrice: number,
+    message?: string,
+  ): Promise<any> {
+    // Validate IDs
+    if (!Types.ObjectId.isValid(threadId) || !Types.ObjectId.isValid(beadId) || !Types.ObjectId.isValid(buyerId)) {
+      throw new HttpException('Invalid ID format', HttpStatus.BAD_REQUEST);
+    }
+
+    const threadObjectId = new Types.ObjectId(threadId);
+    const beadObjectId = new Types.ObjectId(beadId);
+    const buyerObjectId = new Types.ObjectId(buyerId);
+
+    // Check if thread exists and contains the bead
+    const thread = await this.threadModel.findOne({
+      _id: threadObjectId,
+      beads: beadObjectId,
+    });
+
+    if (!thread) {
+      throw new HttpException('Thread or bead not found', HttpStatus.NOT_FOUND);
+    }
+
+    // Check if buyer is a member of the thread
+    const isMember = thread.members.some(member => {
+      if (member instanceof Types.ObjectId) {
+        return member.equals(buyerObjectId);
+      } else {
+        const m = member as { _id: Types.ObjectId };
+        return m._id.equals(buyerObjectId);
+      }
+    });
+
+    if (!isMember) {
+      throw new HttpException('Buyer is not a member of this thread', HttpStatus.FORBIDDEN);
+    }
+
+    // Check for existing pending request
+    const existingRequest = await this.beadPurchaseRequestModel.findOne({
+      beadId: beadObjectId,
+      buyerId: buyerObjectId,
+      status: 'pending',
+    });
+
+    if (existingRequest) {
+      throw new HttpException('You already have a pending request for this bead', HttpStatus.CONFLICT);
+    }
+
+    // Create the purchase request
+    const purchaseRequest = await this.beadPurchaseRequestModel.create({
+      threadId: threadObjectId,
+      beadId: beadObjectId,
+      buyerId: buyerObjectId,
+      offerPrice,
+      message,
+      status: 'pending',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    return {
+      success: true,
+      requestId: purchaseRequest._id,
+      message: 'Purchase request submitted successfully',
+    };
+  }
+
+  async getBeadPurchaseRequests(beadId: string): Promise<any> {
+    if (!Types.ObjectId.isValid(beadId)) {
+      throw new HttpException('Invalid bead ID', HttpStatus.BAD_REQUEST);
+    }
+
+    return await this.beadPurchaseRequestModel.aggregate([
+      {
+        $match: {
+          beadId: new Types.ObjectId(beadId),
+        },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'buyerId',
+          foreignField: '_id',
+          as: 'buyer',
+        },
+      },
+      { $unwind: '$buyer' },
+      {
+        $project: {
+          _id: 1,
+          offerPrice: 1,
+          message: 1,
+          status: 1,
+          createdAt: 1,
+          respondedAt: 1,
+          responseMessage: 1,
+          'buyer._id': 1,
+          'buyer.fullName': 1,
+          'buyer.profilePicture': 1,
+        },
+      },
+      { $sort: { createdAt: -1 } },
+    ]);
+  }
+
+  async respondToBeadPurchase(requestId: string, accept: boolean, responseMessage?: string): Promise<any> {
+    if (!Types.ObjectId.isValid(requestId)) {
+      throw new HttpException('Invalid request ID', HttpStatus.BAD_REQUEST);
+    }
+
+    const request = await this.beadPurchaseRequestModel.findById(requestId);
+    if (!request) {
+      throw new HttpException('Purchase request not found', HttpStatus.NOT_FOUND);
+    }
+
+    if (request.status !== 'pending') {
+      throw new HttpException('Request has already been processed', HttpStatus.BAD_REQUEST);
+    }
+
+    const bead = await this.beadModel.findById(request.beadId);
+    if (!bead) {
+      throw new HttpException('Bead not found', HttpStatus.NOT_FOUND);
+    }
+
+    if (accept) {
+      // Verify the buyer exists
+      const buyerExists = await this.userModel.exists({ _id: request.buyerId });
+      if (!buyerExists) {
+        throw new HttpException('Buyer not found', HttpStatus.NOT_FOUND);
+      }
+
+      // Update the ownerId reference
+      bead.ownerId = request.buyerId; // This should be a Types.ObjectId
+      await bead.save();
+    }
+
+    // Update request status
+    request.status = accept ? 'accepted' : 'rejected';
+    request.responseMessage = responseMessage;
+    request.respondedAt = new Date();
+    await request.save();
+
+    return {
+      success: true,
+      status: request.status,
+      message: `Purchase request ${accept ? 'accepted' : 'rejected'}`,
+      beadId: bead._id,
+      newOwnerId: accept ? request.buyerId : bead.ownerId,
+    };
+  }
+
+  async getThreadPurchaseRequests(threadId: string): Promise<any> {
+    if (!Types.ObjectId.isValid(threadId)) {
+      throw new HttpException('Invalid thread ID', HttpStatus.BAD_REQUEST);
+    }
+
+    return await this.beadPurchaseRequestModel.aggregate([
+      {
+        $match: {
+          threadId: new Types.ObjectId(threadId),
+        },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'buyerId',
+          foreignField: '_id',
+          as: 'buyer',
+        },
+      },
+      { $unwind: '$buyer' },
+      {
+        $lookup: {
+          from: 'beads',
+          localField: 'beadId',
+          foreignField: '_id',
+          as: 'bead',
+        },
+      },
+      { $unwind: '$bead' },
+      {
+        $project: {
+          _id: 1,
+          offerPrice: 1,
+          message: 1,
+          status: 1,
+          createdAt: 1,
+          respondedAt: 1,
+          responseMessage: 1,
+          'buyer._id': 1,
+          'buyer.fullName': 1,
+          'buyer.profilePicture': 1,
+          'bead._id': 1,
+          'bead.name': 1,
+          'bead.image': 1,
+        },
+      },
+      { $sort: { createdAt: -1 } },
+    ]);
   }
 
   // async removeAllThreads(): Promise<void> {

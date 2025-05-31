@@ -1,6 +1,6 @@
 import { ThreadVisibilityType } from '@app/helpers/types/thread';
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsOptional, IsEnum, IsArray, IsBoolean } from 'class-validator';
+import { IsString, IsOptional, IsEnum, IsArray, IsBoolean, IsNumber } from 'class-validator';
 export class createThreadDto {
   @ApiProperty()
   @IsString()
@@ -100,4 +100,41 @@ export class RespondToInviteDto {
   @ApiProperty()
   @IsBoolean()
   accept: boolean;
+}
+
+export class CreateBeadPurchaseRequestDto {
+  @ApiProperty()
+  @IsString()
+  threadId: string;
+
+  @ApiProperty()
+  @IsString()
+  beadId: string;
+
+  @ApiProperty()
+  @IsString()
+  buyerId: string;
+
+  @ApiProperty()
+  @IsNumber()
+  offerPrice: number;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  message?: string;
+}
+export class RespondToBeadPurchaseRequestDto {
+  @ApiProperty()
+  @IsString()
+  requestId: string;
+
+  @ApiProperty()
+  @IsBoolean()
+  accept: boolean;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  responseMessage?: string;
 }

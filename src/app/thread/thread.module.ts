@@ -6,6 +6,8 @@ import { Thread, ThreadSchema } from '../../models/thread.schema';
 import { BeadsModule } from '../bead/bead.module';
 import { ThreadInviteSchema } from '@app/models/invite.schema';
 import { User, UserSchema } from '@app/models/user.schema';
+import { BeadPurchaseRequest, BeadPurchaseRequestSchema } from '@app/models/beadPurchaseRequest.schema';
+import { Bead, BeadSchema } from '@app/models/bead.schema';
 
 @Module({
   imports: [
@@ -13,6 +15,8 @@ import { User, UserSchema } from '@app/models/user.schema';
       { name: Thread.name, schema: ThreadSchema },
       { name: 'ThreadInvite', schema: ThreadInviteSchema },
       { name: User.name, schema: UserSchema },
+      { name: Bead.name, schema: BeadSchema },
+      { name: BeadPurchaseRequest.name, schema: BeadPurchaseRequestSchema },
     ]),
     BeadsModule,
   ],

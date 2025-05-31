@@ -18,9 +18,11 @@ import { ThreadsService } from './thread.service';
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import {
   AddMembersDto,
+  CreateBeadPurchaseRequestDto,
   CreateInviteDto,
   createThreadDto,
   PagingQueryDto,
+  RespondToBeadPurchaseRequestDto,
   RespondToInviteDto,
   ThreadUpdateDto,
 } from './thread.dto';
@@ -215,6 +217,50 @@ export class ThreadsController {
 
     const invitations = await this.threadService.getInvitationsByEmail(email);
     return invitations;
+  }
+
+  @Post('/request-bead-purchase')
+  @UseInterceptors(ResponseInterceptor)
+  @ResponseMessage('Bead purchase request submitted')
+  async requestBeadPurchase(@Body() purchaseRequest: CreateBeadPurchaseRequestDto, @Req() req: Request) {
+    // const buyerId = (req.user as any)?._id;
+    // if (!buyerId) {
+    //   throw new BadRequestException('Authentication required');
+    // }
+
+    return await this.threadService.createBeadPurchaseRequest(
+      purchaseRequest.threadId,
+      purchaseRequest.beadId,
+      purchaseRequest.buyerId,
+      purchaseRequest.offerPrice,
+      purchaseRequest.message,
+    );
+  }
+
+  @Get('/bead-purchase-requests/:beadId')
+  @UseInterceptors(ResponseInterceptor)
+  @ResponseMessage('Bead purchase requests fetched successfully')
+  async getBeadPurchaseRequests(@Param('beadId') beadId: string) {
+    return await this.threadService.getBeadPurchaseRequests(beadId);
+  }
+
+  @Post('/respond-to-bead-purchase')
+  @UseInterceptors(ResponseInterceptor)
+  @ResponseMessage('Bead purchase request response processed')
+  async respondToBeadPurchase(@Body() body: RespondToBeadPurchaseRequestDto, @Req() req: Request) {
+    // const userId = (req.user as any)?._id; // Uncomment if you want to verify the responder is the owner
+    // if (!userId) {
+    //   throw new BadRequestException('Authentication required');
+    // }
+
+    return await this.threadService.respondToBeadPurchase(body.requestId, body.accept, body.responseMessage);
+  }
+
+  @Get('/thread-purchase-requests/:threadId')
+  @UseInterceptors(ResponseInterceptor)
+  @ResponseMessage('Thread purchase requests fetched successfully')
+  async getThreadPurchaseRequests(@Param('threadId') threadId: string) {
+    return await this.threadService.getThreadPurchaseRequests(threadId);
   }
 
   // @Delete('/deleteAll')

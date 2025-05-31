@@ -9,7 +9,7 @@ export class Bead {
   beadName: string;
 
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User' })
-  ownerId: User;
+  ownerId: Types.ObjectId;
 
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User' })
   currentOwnerId: User;
