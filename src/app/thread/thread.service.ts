@@ -581,7 +581,6 @@ export class ThreadsService {
     offerPrice: number,
     message?: string,
   ): Promise<any> {
-    // Validate IDs
     if (!Types.ObjectId.isValid(threadId) || !Types.ObjectId.isValid(beadId) || !Types.ObjectId.isValid(buyerId)) {
       throw new HttpException('Invalid ID format', HttpStatus.BAD_REQUEST);
     }
@@ -590,7 +589,6 @@ export class ThreadsService {
     const beadObjectId = new Types.ObjectId(beadId);
     const buyerObjectId = new Types.ObjectId(buyerId);
 
-    // Check if thread exists and contains the bead
     const thread = await this.threadModel.findOne({
       _id: threadObjectId,
       beads: beadObjectId,
@@ -600,7 +598,6 @@ export class ThreadsService {
       throw new HttpException('Thread or bead not found', HttpStatus.NOT_FOUND);
     }
 
-    // Check if buyer is a member of the thread
     const isMember = thread.members.some(member => {
       if (member instanceof Types.ObjectId) {
         return member.equals(buyerObjectId);
@@ -614,7 +611,6 @@ export class ThreadsService {
       throw new HttpException('Buyer is not a member of this thread', HttpStatus.FORBIDDEN);
     }
 
-    // Check for existing pending request
     const existingRequest = await this.beadPurchaseRequestModel.findOne({
       beadId: beadObjectId,
       buyerId: buyerObjectId,
@@ -625,7 +621,6 @@ export class ThreadsService {
       throw new HttpException('You already have a pending request for this bead', HttpStatus.CONFLICT);
     }
 
-    // Create the purchase request
     const purchaseRequest = await this.beadPurchaseRequestModel.create({
       threadId: threadObjectId,
       beadId: beadObjectId,

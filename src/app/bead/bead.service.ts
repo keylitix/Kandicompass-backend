@@ -8,11 +8,15 @@ import { isValidString } from 'src/utils/string';
 import * as QRCode from 'qrcode';
 import * as path from 'path';
 import * as fs from 'fs';
+import { Thread } from '@app/models/thread.schema';
 
 @Injectable()
 export class BeadsService {
   private readonly logger = new Logger(BeadsService.name);
-  constructor(@InjectModel(Bead.name) private beadModel: Model<Bead>) {}
+  constructor(
+    @InjectModel(Bead.name) private beadModel: Model<Bead>,
+    @InjectModel(Thread.name) private threadModel: Model<Thread>,
+  ) {}
 
   private async generateQRCode(beadData: any, beadId: string): Promise<string> {
     try {
@@ -40,6 +44,13 @@ export class BeadsService {
   }
 
   async build(model: createBeadDto) {
+    if (model.threadId) {
+      const threadExists = await this.threadModel.exists({ _id: model.threadId });
+      if (!threadExists) {
+        throw new HttpException('Thread not found', HttpStatus.BAD_REQUEST);
+      }
+    }
+
     const {
       beadName,
       beadType,
@@ -86,9 +97,17 @@ export class BeadsService {
     bead.link = link;
 
     const qrPath = await this.generateQRCode({ link }, bead._id.toString());
-
     bead.qrCode = qrPath;
     await bead.save();
+
+    // If threadId was provided, update the thread's beads array
+    if (model.threadId) {
+      await this.threadModel.findByIdAndUpdate(
+        model.threadId,
+        { $addToSet: { beads: bead._id } }, // Using $addToSet to avoid duplicates
+        { new: true },
+      );
+    }
 
     return bead;
   }
