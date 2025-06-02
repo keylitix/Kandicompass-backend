@@ -123,16 +123,46 @@ export class ThreadsService {
       {
         $lookup: {
           from: 'beads',
-          localField: 'beads',
-          foreignField: '_id',
+          let: { beadIds: '$beads' },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $in: ['$_id', '$$beadIds'] },
+              },
+            },
+            {
+              $project: {
+                _id: 1,
+                beadName: 1,
+              },
+            },
+          ],
           as: 'beads',
         },
       },
       {
         $lookup: {
           from: 'users',
-          localField: 'members',
-          foreignField: '_id',
+          let: { memberIds: '$members' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $in: [
+                    '$_id',
+                    {
+                      $map: {
+                        input: '$$memberIds',
+                        as: 'id',
+                        in: { $toObjectId: '$$id' },
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+            { $project: { _id: 1, fullName: 1, email: 1 } },
+          ],
           as: 'members',
         },
       },
@@ -178,16 +208,46 @@ export class ThreadsService {
       {
         $lookup: {
           from: 'beads',
-          localField: 'beads',
-          foreignField: '_id',
+          let: { beadIds: '$beads' },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $in: ['$_id', '$$beadIds'] },
+              },
+            },
+            {
+              $project: {
+                _id: 1,
+                beadName: 1,
+              },
+            },
+          ],
           as: 'beads',
         },
       },
       {
         $lookup: {
           from: 'users',
-          localField: 'members',
-          foreignField: '_id',
+          let: { memberIds: '$members' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $in: [
+                    '$_id',
+                    {
+                      $map: {
+                        input: '$$memberIds',
+                        as: 'id',
+                        in: { $toObjectId: '$$id' },
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+            { $project: { _id: 1, fullName: 1, email: 1 } },
+          ],
           as: 'members',
         },
       },
@@ -230,16 +290,46 @@ export class ThreadsService {
       {
         $lookup: {
           from: 'beads',
-          localField: 'beads',
-          foreignField: '_id',
+          let: { beadIds: '$beads' },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $in: ['$_id', '$$beadIds'] },
+              },
+            },
+            {
+              $project: {
+                _id: 1,
+                beadName: 1,
+              },
+            },
+          ],
           as: 'beads',
         },
       },
       {
         $lookup: {
           from: 'users',
-          localField: 'members',
-          foreignField: '_id',
+          let: { memberIds: '$members' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $in: [
+                    '$_id',
+                    {
+                      $map: {
+                        input: '$$memberIds',
+                        as: 'id',
+                        in: { $toObjectId: '$$id' },
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+            { $project: { _id: 1, fullName: 1, email: 1 } },
+          ],
           as: 'members',
         },
       },
@@ -280,16 +370,46 @@ export class ThreadsService {
       {
         $lookup: {
           from: 'beads',
-          localField: 'beads',
-          foreignField: '_id',
+          let: { beadIds: '$beads' },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $in: ['$_id', '$$beadIds'] },
+              },
+            },
+            {
+              $project: {
+                _id: 1,
+                beadName: 1,
+              },
+            },
+          ],
           as: 'beads',
         },
       },
       {
         $lookup: {
           from: 'users',
-          localField: 'members',
-          foreignField: '_id',
+          let: { memberIds: '$members' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $in: [
+                    '$_id',
+                    {
+                      $map: {
+                        input: '$$memberIds',
+                        as: 'id',
+                        in: { $toObjectId: '$$id' },
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+            { $project: { _id: 1, fullName: 1, email: 1 } },
+          ],
           as: 'members',
         },
       },
