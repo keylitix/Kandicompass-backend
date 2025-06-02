@@ -263,6 +263,12 @@ export class ThreadsController {
     return await this.threadService.getThreadPurchaseRequests(threadId);
   }
 
+  @Get('/bead-requests/:email')
+  @UseInterceptors(ResponseInterceptor)
+  async getBeadRequestsByEmail(@Param('email') email: string) {
+    return await this.threadService.getBeadPurchaseRequestsByEmail(email);
+  }
+
   // @Delete('/deleteAll')
   // @UseInterceptors(MessageResponseInterceptor)
   // @ResponseMessage('All threads removed')

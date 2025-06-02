@@ -718,6 +718,18 @@ export class ThreadsService {
       throw new HttpException('Thread or bead not found', HttpStatus.NOT_FOUND);
     }
 
+    if (!thread.ownerId) {
+      throw new HttpException('Thread owner not found', HttpStatus.NOT_FOUND);
+    }
+
+    const owner = await this.userModel.findById(thread.ownerId).select('email');
+    if (!owner) {
+      throw new HttpException('Thread owner not found', HttpStatus.NOT_FOUND);
+    }
+
+    const threadOwnerId = thread.ownerId;
+    const threadOwnerEmail = owner.email;
+
     const isMember = thread.members.some(member => {
       if (member instanceof Types.ObjectId) {
         return member.equals(buyerObjectId);
@@ -748,6 +760,8 @@ export class ThreadsService {
       offerPrice,
       message,
       status: 'pending',
+      threadOwnerId,
+      threadOwnerEmail,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -891,6 +905,28 @@ export class ThreadsService {
       },
       { $sort: { createdAt: -1 } },
     ]);
+  }
+
+  async getBeadPurchaseRequestsByEmail(email: string): Promise<any> {
+    // Validate email format if needed
+    if (!email || !email.includes('@')) {
+      throw new HttpException('Invalid email format', HttpStatus.BAD_REQUEST);
+    }
+
+    const requests = await this.beadPurchaseRequestModel
+      .find({
+        threadOwnerEmail: email,
+      })
+      .populate('threadId', 'threadName')
+      .populate('beadId', 'name price') // assuming bead has name and price fields
+      .populate('buyerId', 'username email') // assuming user has username and email
+      .sort({ createdAt: -1 });
+
+    return {
+      success: true,
+      data: requests,
+      message: 'Bead purchase requests retrieved successfully',
+    };
   }
 
   // async removeAllThreads(): Promise<void> {

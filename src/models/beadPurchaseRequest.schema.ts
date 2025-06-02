@@ -29,6 +29,12 @@ export class BeadPurchaseRequest {
 
   @Prop({ type: Date })
   respondedAt: Date;
+
+  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
+  threadOwnerId: Types.ObjectId;
+
+  @Prop({ required: true })
+  threadOwnerEmail: string;
 }
 
 export type BeadPurchaseRequestDocument = BeadPurchaseRequest & Document;
