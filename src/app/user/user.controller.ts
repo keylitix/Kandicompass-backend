@@ -12,6 +12,7 @@ import {
   Delete,
   Put,
   UploadedFile,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
@@ -48,9 +49,12 @@ export class UserController {
   @Get('/getall/')
   @ResponseMessage('user fetched.')
   @UseInterceptors(ResponseInterceptor)
-  getAllUser(@Query() query: PagingQueryDto) {
+  getAllUser(
+    @Query('page_size', ParseIntPipe) page_size: number,
+    @Query('page_number', ParseIntPipe) page_number: number,
+  ) {
     this.logger.log('[getall:user]');
-    return this.userService.getAllUser(query);
+    return this.userService.getAllUser(page_size, page_number);
   }
 
   @Post('/login')

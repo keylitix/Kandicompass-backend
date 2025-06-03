@@ -105,18 +105,15 @@ export class UserService {
     return user;
   }
 
-  async getAllUser(queryParams): Promise<User[]> {
-    let { page_no = '1', page_size = '50' } = queryParams;
+  async getAllUser(page_size: number, page_number: number): Promise<User[]> {
+    // let { page_no = '1', page_size = '50' } = queryParams;
 
-    page_no = Number(page_no);
-    page_size = Number(page_size);
+    // page_no = Number(page_no);
+    // page_size = Number(page_size);
 
-    const skip = (page_no - 1) * page_size;
+    const skip = (page_number - 1) * page_size;
 
     const all_users = await this.userModel.aggregate([
-      {
-        $match: {},
-      },
       {
         $match: {
           is_deleted: false,
@@ -163,11 +160,25 @@ export class UserService {
       {
         $match: {
           _id: new Types.ObjectId(id),
+          is_deleted: false,
         },
       },
       {
-        $match: {
-          is_deleted: false,
+        $addFields: {
+          profileScore: {
+            $sum: [
+              { $cond: [{ $ifNull: ['$profile_picture', false] }, 20, 0] },
+              { $cond: [{ $ifNull: ['$full_name', false] }, 7, 0] },
+              { $cond: [{ $ifNull: ['$email', false] }, 7, 0] },
+              { $cond: [{ $ifNull: ['$phone', false] }, 7, 0] },
+              { $cond: [{ $ifNull: ['$bio', false] }, 7, 0] },
+              { $cond: [{ $ifNull: ['$location', false] }, 17, 0] },
+              { $cond: [{ $ifNull: ['$notification_prefs', false] }, 10, 0] },
+              { $cond: [{ $ifNull: ['$profile_visible', false] }, 8, 0] },
+              { $cond: [{ $ifNull: ['$display_email', false] }, 8, 0] },
+              { $cond: [{ $ifNull: ['$display_phone', false] }, 8, 0] },
+            ],
+          },
         },
       },
     ]);
