@@ -89,20 +89,23 @@ export class ThreadsService {
     return thread;
   }
 
-  async getAllThread(queryParams: any): Promise<{
+  async getAllThread(
+    page_size: number,
+    page_number: number,
+  ): Promise<{
     data: Thread[];
-    pagination: {
-      total: number;
-      page: number;
-      pageSize: number;
-      totalPages: number;
-    };
+    // pagination: {
+    //   total: number;
+    //   page: number;
+    //   pageSize: number;
+    //   totalPages: number;
+    // };
   }> {
-    let { page_no = '1', page_size = '50' } = queryParams;
+    // let { page_no = '1', page_size = '50' } = queryParams;
 
-    const page = Number(page_no);
-    const limit = Number(page_size);
-    const skip = (page - 1) * limit;
+    // const page = Number(page_no);
+    // const limit = Number(page_size);
+    const skip = (page_number - 1) * page_size;
 
     const total = await this.threadModel.countDocuments({ is_deleted: false });
 
@@ -174,17 +177,20 @@ export class ThreadsService {
         },
       },
       { $skip: skip },
-      { $limit: limit },
+      {
+        $limit: page_size,
+      },
+      // { $limit: limit },
     ]);
 
     return {
       data: threads,
-      pagination: {
-        total,
-        page,
-        pageSize: limit,
-        totalPages: Math.ceil(total / limit),
-      },
+      // pagination: {
+      //   total,
+      //   page,
+      //   pageSize: limit,
+      //   totalPages: Math.ceil(total / limit),
+      // },
     };
   }
 

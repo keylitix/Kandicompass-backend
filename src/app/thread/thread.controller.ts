@@ -13,6 +13,7 @@ import {
   HttpStatus,
   UploadedFile,
   BadRequestException,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { ThreadsService } from './thread.service';
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
@@ -65,9 +66,12 @@ export class ThreadsController {
   @Get('/getall')
   @UseInterceptors(ResponseInterceptor)
   @ResponseMessage('thread fetched.')
-  async getAllThread(@Query() query: PagingQueryDto) {
+  async getAllThread(
+    @Query('page_size', ParseIntPipe) page_size: number,
+    @Query('page_number', ParseIntPipe) page_number: number,
+  ) {
     this.logger.log('[getAll: thread');
-    const thread = await this.threadService.getAllThread(query);
+    const thread = await this.threadService.getAllThread(page_size, page_number);
     return thread;
   }
 

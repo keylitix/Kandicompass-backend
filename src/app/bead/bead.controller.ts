@@ -12,6 +12,7 @@ import {
   HttpException,
   HttpStatus,
   UploadedFiles,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { BeadsService } from './bead.service';
 import { ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
@@ -42,9 +43,12 @@ export class BeadsController {
   @Get('/getall')
   @UseInterceptors(ResponseInterceptor)
   @ResponseMessage('bead fetched.')
-  async getAllBead(@Query() query: PagingQueryDto) {
+  async getAllBead(
+    @Query('page_size', ParseIntPipe) page_size: number,
+    @Query('page_number', ParseIntPipe) page_number: number,
+  ) {
     this.logger.log('[getAll: bead');
-    const bead = await this.beadService.getAllBead(query);
+    const bead = await this.beadService.getAllBead(page_size, page_number);
     return bead;
   }
 
