@@ -21,10 +21,13 @@ import {
   AddMembersDto,
   CreateBeadPurchaseRequestDto,
   CreateInviteDto,
+  CreateMembershipRequestDto,
   createThreadDto,
+  GetMembershipRequestsDto,
   PagingQueryDto,
   RespondToBeadPurchaseRequestDto,
   RespondToInviteDto,
+  RespondToMembershipRequestDto,
   ThreadUpdateDto,
 } from './thread.dto';
 import { MessageResponseInterceptor, ResponseInterceptor } from 'src/helpers/interceptors/respone.interceptor';
@@ -271,6 +274,37 @@ export class ThreadsController {
   @UseInterceptors(ResponseInterceptor)
   async getBeadRequestsByEmail(@Param('email') email: string) {
     return await this.threadService.getBeadPurchaseRequestsByEmail(email);
+  }
+
+  @Post('/membership-request')
+  @UseInterceptors(ResponseInterceptor)
+  @ResponseMessage('Membership request created successfully')
+  async createMembershipRequest(@Body() createRequestDto: CreateMembershipRequestDto) {
+    return await this.threadService.createMembershipRequest(
+      createRequestDto.threadId,
+      createRequestDto.userId,
+      createRequestDto.message,
+    );
+  }
+
+  @Post('/respond-to-membership-request')
+  @UseInterceptors(ResponseInterceptor)
+  @ResponseMessage('Membership request response processed')
+  async respondToMembershipRequest(@Body() respondDto: RespondToMembershipRequestDto) {
+    return await this.threadService.respondToMembershipRequest(
+      respondDto.requestId,
+      respondDto.threadId,
+      respondDto.userId,
+      respondDto.accept,
+      respondDto.responseMessage,
+    );
+  }
+
+  @Get('/membership-requests/:threadId')
+  @UseInterceptors(ResponseInterceptor)
+  @ResponseMessage('Membership requests retrieved successfully')
+  async getMembershipRequestsByThreadId(@Param() params: GetMembershipRequestsDto) {
+    return await this.threadService.getMembershipRequestsByThreadId(params.threadId);
   }
 
   // @Delete('/deleteAll')

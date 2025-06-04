@@ -12,6 +12,7 @@ import * as crypto from 'crypto';
 import { User } from '@app/models/user.schema';
 import { BeadPurchaseRequest } from '@app/models/beadPurchaseRequest.schema';
 import { Bead } from '@app/models/bead.schema';
+import { MembershipRequestDocument, MembershipRequestStatus } from '@app/models/membershipRequest.schema';
 
 @Injectable()
 export class ThreadsService {
@@ -22,6 +23,7 @@ export class ThreadsService {
     @InjectModel(User.name) private userModel: Model<User>,
     @InjectModel(Bead.name) private beadModel: Model<Bead>,
     @InjectModel(BeadPurchaseRequest.name) private beadPurchaseRequestModel: Model<BeadPurchaseRequest>,
+    @InjectModel('MembershipRequest') private membershipRequestModel: Model<MembershipRequestDocument>,
   ) {}
 
   private async generateQRCode(link: string, threadId: string): Promise<string> {
@@ -950,6 +952,134 @@ export class ThreadsService {
     };
   }
 
+  async createMembershipRequest(threadId: string, requesterId: string, message?: string) {
+    if (!Types.ObjectId.isValid(threadId) || !Types.ObjectId.isValid(requesterId)) {
+      throw new HttpException('Invalid ID format', HttpStatus.BAD_REQUEST);
+    }
+
+    const thread = await this.threadModel.findById(threadId);
+    if (!thread) {
+      throw new HttpException('Thread not found', HttpStatus.NOT_FOUND);
+    }
+
+    const user = await this.userModel.findById(requesterId);
+    if (!user) {
+      throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+    }
+
+    const isMember = thread.members.some(memberId => memberId.toString() === requesterId);
+    if (isMember) {
+      throw new HttpException('User is already a member of this thread', HttpStatus.BAD_REQUEST);
+    }
+
+    const existingRequest = await this.membershipRequestModel.findOne({
+      threadId,
+      requesterId,
+      status: MembershipRequestStatus.PENDING,
+    });
+
+    if (existingRequest) {
+      throw new HttpException('You already have a pending request for this thread', HttpStatus.CONFLICT);
+    }
+
+    const request = await this.membershipRequestModel.create({
+      threadId,
+      requesterId,
+      message,
+      status: MembershipRequestStatus.PENDING,
+    });
+
+    return {
+      success: true,
+      requestId: request._id,
+      threadId: thread._id,
+      userId: requesterId,
+      message: 'Membership request submitted successfully',
+    };
+  }
+
+  async respondToMembershipRequest(
+    requestId: string,
+    threadId: string,
+    responderId: string,
+    accept: boolean,
+    responseMessage?: string,
+  ) {
+    if (
+      !Types.ObjectId.isValid(requestId) ||
+      !Types.ObjectId.isValid(threadId) ||
+      !Types.ObjectId.isValid(responderId)
+    ) {
+      throw new HttpException('Invalid ID format', HttpStatus.BAD_REQUEST);
+    }
+
+    const request = await this.membershipRequestModel.findById(requestId);
+    if (!request) {
+      throw new HttpException('Request not found', HttpStatus.NOT_FOUND);
+    }
+
+    if (request.status !== MembershipRequestStatus.PENDING) {
+      throw new HttpException('Request has already been processed', HttpStatus.BAD_REQUEST);
+    }
+
+    const thread = await this.threadModel.findById(threadId);
+    if (!thread) {
+      throw new HttpException('Thread not found', HttpStatus.NOT_FOUND);
+    }
+
+    if (thread.ownerId.toString() !== responderId) {
+      throw new HttpException('Only thread owner can respond to membership requests', HttpStatus.FORBIDDEN);
+    }
+
+    if (accept) {
+      await this.threadModel.findByIdAndUpdate(threadId, {
+        $addToSet: { members: request.requesterId },
+      });
+    }
+
+    request.status = accept ? MembershipRequestStatus.APPROVED : MembershipRequestStatus.REJECTED;
+    request.responderId = new Types.ObjectId(responderId);
+    request.responseMessage = responseMessage;
+    request.respondedAt = new Date();
+    await request.save();
+
+    return {
+      success: true,
+      requestId: request._id,
+      threadId: thread._id,
+      userId: request.requesterId,
+      responderId: responderId,
+      status: request.status,
+      message: `Membership request ${accept ? 'approved' : 'rejected'}`,
+    };
+  }
+
+  async getMembershipRequestsByThreadId(threadId: string) {
+    if (!Types.ObjectId.isValid(threadId)) {
+      throw new HttpException('Invalid ID format', HttpStatus.BAD_REQUEST);
+    }
+
+    const thread = await this.threadModel.findById(threadId);
+    if (!thread) {
+      throw new HttpException('Thread not found', HttpStatus.NOT_FOUND);
+    }
+    const requests = await this.membershipRequestModel
+      .find({
+        threadId,
+        status: MembershipRequestStatus.PENDING,
+      })
+      .populate('requesterId', 'username email avatar')
+      .sort({ createdAt: -1 })
+      .lean()
+      .populate('threadId');
+
+    return {
+      success: true,
+      data: requests,
+      count: requests.length,
+      message: 'Membership requests retrieved successfully',
+    };
+  }
   // async removeAllThreads(): Promise<void> {
   //   await this.threadModel.deleteMany({}, { $set: { is_deleted: true } });
   // }

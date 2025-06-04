@@ -148,3 +148,54 @@ export class RespondToBeadPurchaseRequestDto {
   @IsOptional()
   responseMessage?: string;
 }
+
+export class CreateMembershipRequestDto {
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  threadId: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  userId: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  message?: string;
+}
+
+export class RespondToMembershipRequestDto {
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  requestId: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  threadId: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  userId: string;
+
+  @ApiProperty()
+  @IsOptional()
+  @IsBoolean()
+  accept: boolean;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  responseMessage?: string;
+}
+
+export class GetMembershipRequestsDto {
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  threadId: string;
+}
