@@ -22,7 +22,7 @@ export class ThreadsService {
     @InjectModel(User.name) private userModel: Model<User>,
     @InjectModel(Bead.name) private beadModel: Model<Bead>,
     @InjectModel(BeadPurchaseRequest.name) private beadPurchaseRequestModel: Model<BeadPurchaseRequest>,
-  ) { }
+  ) {}
 
   private async generateQRCode(link: string, threadId: string): Promise<string> {
     try {
@@ -60,7 +60,7 @@ export class ThreadsService {
     }).save();
 
     const threadId = new Types.ObjectId().toString();
-    const qrCodeUrl = ` https://app.kandicompass.com/dashboard/thread/${threadId.toString()}?jt=HbdhyKPt5JK66yXIuo81ufgPRlOhivFiwj5PDVm2bmimcSEjWBOcQi`;
+    const qrCodeUrl = ` http://localhost:3001/dashboard/thread/${threadId.toString()}?jt=HbdhyKPt5JK66yXIuo81ufgPRlOhivFiwj5PDVm2bmimcSEjWBOcQi`;
     const qrCode = await this.generateQRCode(qrCodeUrl, thread._id.toString());
 
     thread.qrCode = qrCode;
@@ -80,7 +80,7 @@ export class ThreadsService {
       beads: beads || [],
     }).save();
 
-    const qrCodeUrl = ` https://app.kandicompass.com/dashboard/thread/${thread._id.toString()}?jt=HbdhyKPt5JK66yXIuo81ufgPRlOhivFiwj5PDVm2bmimcSEjWBOcQi`;
+    const qrCodeUrl = ` https://localhost:3001/dashboard/thread/${thread._id.toString()}?jt=HbdhyKPt5JK66yXIuo81ufgPRlOhivFiwj5PDVm2bmimcSEjWBOcQi`;
     const qrCode = await this.generateQRCode(qrCodeUrl, thread._id.toString());
 
     thread.qrCode = qrCode;
@@ -445,7 +445,10 @@ export class ThreadsService {
 
     if (
       isValidString(
-        model.description !== 'string' && model.description !== '' && model.description !== undefined && model.description,
+        model.description !== 'string' &&
+          model.description !== '' &&
+          model.description !== undefined &&
+          model.description,
       )
     ) {
       thread.description = model.description;
@@ -454,7 +457,6 @@ export class ThreadsService {
     if (model.visibility) {
       thread.visibility = model.visibility;
     }
-
 
     // if (
     //   isValidString(
