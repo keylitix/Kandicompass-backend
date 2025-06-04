@@ -22,7 +22,7 @@ export class ThreadsService {
     @InjectModel(User.name) private userModel: Model<User>,
     @InjectModel(Bead.name) private beadModel: Model<Bead>,
     @InjectModel(BeadPurchaseRequest.name) private beadPurchaseRequestModel: Model<BeadPurchaseRequest>,
-  ) {}
+  ) { }
 
   private async generateQRCode(link: string, threadId: string): Promise<string> {
     try {
@@ -442,6 +442,19 @@ export class ThreadsService {
     ) {
       thread.threadName = model.threadName;
     }
+
+    if (
+      isValidString(
+        model.description !== 'string' && model.description !== '' && model.description !== undefined && model.description,
+      )
+    ) {
+      thread.description = model.description;
+    }
+
+    if (model.visibility) {
+      thread.visibility = model.visibility;
+    }
+
 
     // if (
     //   isValidString(

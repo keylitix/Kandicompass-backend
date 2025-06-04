@@ -63,6 +63,16 @@ export class ThreadUpdateDto {
   @IsOptional()
   threadName: string;
 
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  description: string;
+
+  @ApiProperty({ enum: ThreadVisibilityType, default: ThreadVisibilityType.Public })
+  @IsEnum(ThreadVisibilityType)
+  @IsOptional()
+  visibility: ThreadVisibilityType;
+
   // @ApiProperty()
   // @IsString()
   // @IsOptional()
