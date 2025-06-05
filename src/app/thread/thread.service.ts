@@ -982,9 +982,12 @@ export class ThreadsService {
       throw new HttpException('You already have a pending request for this thread', HttpStatus.CONFLICT);
     }
 
+    const ownerId = thread.ownerId;
+
     const request = await this.membershipRequestModel.create({
       threadId,
       requesterId,
+      ownerId,
       message,
       status: MembershipRequestStatus.PENDING,
     });
@@ -994,6 +997,7 @@ export class ThreadsService {
       requestId: request._id,
       threadId: thread._id,
       userId: requesterId,
+      ownerId,
       message: 'Membership request submitted successfully',
     };
   }
@@ -1054,32 +1058,30 @@ export class ThreadsService {
     };
   }
 
-  async getMembershipRequestsByThreadId(threadId: string) {
-    if (!Types.ObjectId.isValid(threadId)) {
-      throw new HttpException('Invalid ID format', HttpStatus.BAD_REQUEST);
+  async getRequestsByOwnerEmail(email: string) {
+    if (!email) {
+      throw new HttpException('Email is required', HttpStatus.BAD_REQUEST);
     }
 
-    const thread = await this.threadModel.findById(threadId);
-    if (!thread) {
-      throw new HttpException('Thread not found', HttpStatus.NOT_FOUND);
+    const owner = await this.userModel.findOne({ email: email.trim().toLowerCase() });
+    if (!owner) {
+      throw new HttpException('Owner with this email not found', HttpStatus.NOT_FOUND);
     }
+
     const requests = await this.membershipRequestModel
-      .find({
-        threadId,
-        status: MembershipRequestStatus.PENDING,
-      })
-      .populate('requesterId', 'username email avatar')
-      .sort({ createdAt: -1 })
-      .lean()
-      .populate('threadId');
-
+      .find({ ownerId: owner._id })
+      .populate('threadId', 'threadName')
+      .populate('requesterId', 'fullName email')
+      .populate('ownerId', 'fullName email');
     return {
       success: true,
-      data: requests,
-      count: requests.length,
-      message: 'Membership requests retrieved successfully',
+      ownerId: owner._id,
+      email: owner.email,
+      totalRequests: requests.length,
+      requests,
     };
   }
+
   // async removeAllThreads(): Promise<void> {
   //   await this.threadModel.deleteMany({}, { $set: { is_deleted: true } });
   // }

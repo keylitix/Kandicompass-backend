@@ -300,11 +300,11 @@ export class ThreadsController {
     );
   }
 
-  @Get('/membership-requests/:threadId')
+  @Get('/membership-requests/by-owner-email')
   @UseInterceptors(ResponseInterceptor)
-  @ResponseMessage('Membership requests retrieved successfully')
-  async getMembershipRequestsByThreadId(@Param() params: GetMembershipRequestsDto) {
-    return await this.threadService.getMembershipRequestsByThreadId(params.threadId);
+  @ResponseMessage('Membership requests fetched successfully')
+  async getRequestsByOwnerEmail(@Query('email') email: string) {
+    return await this.threadService.getRequestsByOwnerEmail(email);
   }
 
   // @Delete('/deleteAll')

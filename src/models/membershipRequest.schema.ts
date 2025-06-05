@@ -1,8 +1,5 @@
-// src/models/membershipRequest.schema.ts
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
-import { User } from './user.schema';
-import { Thread } from './thread.schema';
 
 export enum MembershipRequestStatus {
   PENDING = 'pending',
@@ -17,6 +14,9 @@ export class MembershipRequest {
 
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   requesterId: Types.ObjectId;
+
+  @Prop({ type: Types.ObjectId, ref: 'User' })
+  ownerId: Types.ObjectId;
 
   @Prop({ type: String, required: false })
   message?: string;
