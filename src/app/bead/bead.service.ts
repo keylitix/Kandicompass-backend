@@ -9,6 +9,8 @@ import * as QRCode from 'qrcode';
 import * as path from 'path';
 import * as fs from 'fs';
 import { Thread } from '@app/models/thread.schema';
+import { FeedPost } from '@app/models/feed.schema';
+import { User } from '@app/models/user.schema';
 
 @Injectable()
 export class BeadsService {
@@ -16,7 +18,9 @@ export class BeadsService {
   constructor(
     @InjectModel(Bead.name) private beadModel: Model<Bead>,
     @InjectModel(Thread.name) private threadModel: Model<Thread>,
-  ) {}
+    @InjectModel(FeedPost.name) private feedPostModel: Model<FeedPost>,
+    @InjectModel(User.name) private userModel: Model<User>,
+  ) { }
 
   private async generateQRCode(beadData: any, beadId: string): Promise<string> {
     try {
@@ -100,17 +104,48 @@ export class BeadsService {
     bead.qrCode = qrPath;
     await bead.save();
 
-    // If threadId was provided, update the thread's beads array
+    const user = await this.userModel.findOne({ _id: ownerId, is_deleted: false }).lean();
+
+    await this.feedPostModel.create({
+      type: 'bead_created',
+      beadId: bead._id.toString(),
+      beadName: bead.beadName,
+      beadImage: bead.images?.[0] ?? '/bead-image.png',
+      userId: bead.ownerId.toString(),
+      userName: user?.fullName ?? "User",
+      userAvatar: user?.profilePicture ?? "/avatar.png",
+      content: [
+        {
+          type: 'text',
+          content: bead.description || "",
+        },
+        ...(bead.images?.length
+          ? [
+            {
+              type: 'image',
+              content: bead.images[0],
+            },
+          ]
+          : []),
+      ],
+      location: {
+        lat: 0,
+        lng: 0,
+        address: 'Optional Location',
+      },
+    });
+
     if (model.threadId) {
       await this.threadModel.findByIdAndUpdate(
         model.threadId,
-        { $addToSet: { beads: bead._id } }, // Using $addToSet to avoid duplicates
+        { $addToSet: { beads: bead._id } },
         { new: true },
       );
     }
 
     return bead;
   }
+
 
   async createBead(model: createBeadDto): Promise<any> {
     const bead = await this.build(model);
@@ -353,9 +388,9 @@ export class BeadsService {
     if (
       isValidString(
         model.description !== 'string' &&
-          model.description !== '' &&
-          model.description !== undefined &&
-          model.description,
+        model.description !== '' &&
+        model.description !== undefined &&
+        model.description,
       )
     ) {
       bead.description = model.description;
@@ -378,9 +413,9 @@ export class BeadsService {
     if (
       isValidString(
         model.productCode !== 'string' &&
-          model.productCode !== '' &&
-          model.productCode !== undefined &&
-          model.productCode,
+        model.productCode !== '' &&
+        model.productCode !== undefined &&
+        model.productCode,
       )
     ) {
       bead.productCode = model.productCode;

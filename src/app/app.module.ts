@@ -7,6 +7,7 @@ import configuration from '../config/server.configuration';
 import { UserModule } from './user/user.module';
 import { BeadsModule } from './bead/bead.module';
 import { ThreadsModule } from './thread/thread.module';
+import { FeedModule } from './feed/feed.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -19,6 +20,7 @@ import { ThreadsModule } from './thread/thread.module';
     UserModule,
     BeadsModule,
     ThreadsModule,
+    FeedModule,
   ],
   controllers: [AppController],
   providers: [AppService, Logger],
