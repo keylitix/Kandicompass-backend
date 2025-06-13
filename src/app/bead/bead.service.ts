@@ -457,6 +457,37 @@ export class BeadsService {
     return bead;
   }
 
+
+  async exploreBeads(limit = 50) {
+    const beads = await this.beadModel.aggregate([
+      {
+        $addFields: {
+          ownershipLocationCount: {
+            $size: {
+              $filter: {
+                input: "$ownershipHistory",
+                as: "owner",
+                cond: {
+                  $and: [
+                    { $ne: ["$$owner.location", null] },
+                    { $ne: ["$$owner.location.city", ""] },
+                    { $ne: ["$$owner.location.country", ""] },
+                  ],
+                },
+              },
+            },
+          },
+        },
+      },
+      { $sort: { ownershipLocationCount: -1 } },
+      { $limit: limit },
+    ]);
+  
+    return beads;
+  }
+  
+
+
   // async removeAllBeads(): Promise<void> {
   //   await this.beadModel.deleteMany({}, { $set: { is_deleted: true } });
   // }

@@ -27,7 +27,7 @@ import { FilesInterceptor } from '@nestjs/platform-express';
 export class BeadsController {
   private readonly logger = new Logger(BeadsController.name);
 
-  constructor(private beadService: BeadsService) {}
+  constructor(private beadService: BeadsService) { }
 
   @Post('/create')
   @UseInterceptors(ResponseInterceptor)
@@ -127,6 +127,13 @@ export class BeadsController {
     const imagePaths = files.map(file => `assets/images/${file.filename}`);
     return await this.beadService.addImages(id, imagePaths);
   }
+
+  @Get('/explore')
+  async exploreBeads(@Query('limit') limit: number) {
+    const result = await this.beadService.exploreBeads(limit || 50);
+    return { beads: result };
+  }
+
 
   // @Delete('/deleteAll')
   // @UseInterceptors(MessageResponseInterceptor)
