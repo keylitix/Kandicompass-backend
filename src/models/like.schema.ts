@@ -11,11 +11,8 @@ export class Like {
   @Prop({ required: true })
   userId: string;
 
-  @Prop({ required: true })
-  userName: string;
-
-  @Prop({ required: true })
-  userAvatar: string;
+  @Prop({ required: false, default: Date.now() })
+  created_at: Date;
 }
 
 export const LikeSchema = SchemaFactory.createForClass(Like);

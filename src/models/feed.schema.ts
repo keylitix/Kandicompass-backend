@@ -35,11 +35,9 @@ export class FeedPost {
     lng: number;
     address: string;
   };
-
 }
 
 export const FeedPostSchema = SchemaFactory.createForClass(FeedPost);
-
 
 export type ContentBlock =
   | { type: 'text'; content: string }

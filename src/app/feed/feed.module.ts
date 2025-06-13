@@ -18,9 +18,7 @@ import { CommentsService } from '../comments/comments.service';
       { name: Comment.name, schema: CommentSchema },
     ]),
   ],
-  exports: [
-    MongooseModule
-  ],
+  exports: [MongooseModule],
   controllers: [FeedController, LikeController, CommentsController],
   providers: [FeedService, LikeService, CommentsService],
 })

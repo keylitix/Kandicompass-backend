@@ -6,9 +6,7 @@ import { CommentDocument, Comment } from '@app/models/comment.schema';
 
 @Injectable()
 export class CommentsService {
-  constructor(
-    @InjectModel(Comment.name) private commentModel: Model<CommentDocument>
-  ) {}
+  constructor(@InjectModel(Comment.name) private commentModel: Model<CommentDocument>) {}
 
   async addComment(dto: CreateCommentDto) {
     return this.commentModel.create(dto);
@@ -19,13 +17,9 @@ export class CommentsService {
   }
 
   async updateComment(id: string, message: string) {
-    return this.commentModel.findByIdAndUpdate(
-      id,
-      { message },
-      { new: true }
-    );
+    return this.commentModel.findByIdAndUpdate(id, { message }, { new: true });
   }
-  
+
   async deleteComment(id: string) {
     return this.commentModel.findByIdAndDelete(id);
   }

@@ -6,9 +6,7 @@ import { FeedPost, FeedPostDocument } from '@app/models/feed.schema';
 
 @Injectable()
 export class FeedService {
-  constructor(
-    @InjectModel(FeedPost.name) private readonly feedPostModel: Model<FeedPostDocument>
-  ) {}
+  constructor(@InjectModel(FeedPost.name) private readonly feedPostModel: Model<FeedPostDocument>) {}
 
   async create(data: CreateFeedPostDto) {
     return this.feedPostModel.create({ ...data });

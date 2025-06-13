@@ -10,7 +10,8 @@ export class LocationDto {
 
 export class ContentBlockDto {
   @ApiProperty({ enum: ['text', 'image', 'video'] })
-  @IsString() type: 'text' | 'image' | 'video';
+  @IsString()
+  type: 'text' | 'image' | 'video';
 
   @ApiProperty() @IsString() content: string;
 }

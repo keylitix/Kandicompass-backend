@@ -9,12 +9,4 @@ export class CreateLikeDto {
   @ApiProperty()
   @IsString()
   userId: string;
-
-  @ApiProperty()
-  @IsString()
-  userName: string;
-
-  @ApiProperty()
-  @IsString()
-  userAvatar: string;
 }

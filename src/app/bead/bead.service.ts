@@ -20,7 +20,7 @@ export class BeadsService {
     @InjectModel(Thread.name) private threadModel: Model<Thread>,
     @InjectModel(FeedPost.name) private feedPostModel: Model<FeedPost>,
     @InjectModel(User.name) private userModel: Model<User>,
-  ) { }
+  ) {}
 
   private async generateQRCode(beadData: any, beadId: string): Promise<string> {
     try {
@@ -112,20 +112,20 @@ export class BeadsService {
       beadName: bead.beadName,
       beadImage: bead.images?.[0] ?? '/bead-image.png',
       userId: bead.ownerId.toString(),
-      userName: user?.fullName ?? "User",
-      userAvatar: user?.profilePicture ?? "/avatar.png",
+      userName: user?.fullName ?? 'User',
+      userAvatar: user?.profilePicture ?? '/avatar.png',
       content: [
         {
           type: 'text',
-          content: bead.description || "",
+          content: bead.description || '',
         },
         ...(bead.images?.length
           ? [
-            {
-              type: 'image',
-              content: bead.images[0],
-            },
-          ]
+              {
+                type: 'image',
+                content: bead.images[0],
+              },
+            ]
           : []),
       ],
       location: {
@@ -136,16 +136,11 @@ export class BeadsService {
     });
 
     if (model.threadId) {
-      await this.threadModel.findByIdAndUpdate(
-        model.threadId,
-        { $addToSet: { beads: bead._id } },
-        { new: true },
-      );
+      await this.threadModel.findByIdAndUpdate(model.threadId, { $addToSet: { beads: bead._id } }, { new: true });
     }
 
     return bead;
   }
-
 
   async createBead(model: createBeadDto): Promise<any> {
     const bead = await this.build(model);
@@ -388,9 +383,9 @@ export class BeadsService {
     if (
       isValidString(
         model.description !== 'string' &&
-        model.description !== '' &&
-        model.description !== undefined &&
-        model.description,
+          model.description !== '' &&
+          model.description !== undefined &&
+          model.description,
       )
     ) {
       bead.description = model.description;
@@ -413,9 +408,9 @@ export class BeadsService {
     if (
       isValidString(
         model.productCode !== 'string' &&
-        model.productCode !== '' &&
-        model.productCode !== undefined &&
-        model.productCode,
+          model.productCode !== '' &&
+          model.productCode !== undefined &&
+          model.productCode,
       )
     ) {
       bead.productCode = model.productCode;
@@ -457,7 +452,6 @@ export class BeadsService {
     return bead;
   }
 
-
   async exploreBeads(limit = 50) {
     const beads = await this.beadModel.aggregate([
       {
@@ -465,13 +459,13 @@ export class BeadsService {
           ownershipLocationCount: {
             $size: {
               $filter: {
-                input: "$ownershipHistory",
-                as: "owner",
+                input: '$ownershipHistory',
+                as: 'owner',
                 cond: {
                   $and: [
-                    { $ne: ["$$owner.location", null] },
-                    { $ne: ["$$owner.location.city", ""] },
-                    { $ne: ["$$owner.location.country", ""] },
+                    { $ne: ['$$owner.location', null] },
+                    { $ne: ['$$owner.location.city', ''] },
+                    { $ne: ['$$owner.location.country', ''] },
                   ],
                 },
               },
@@ -482,11 +476,9 @@ export class BeadsService {
       { $sort: { ownershipLocationCount: -1 } },
       { $limit: limit },
     ]);
-  
+
     return beads;
   }
-  
-
 
   // async removeAllBeads(): Promise<void> {
   //   await this.beadModel.deleteMany({}, { $set: { is_deleted: true } });

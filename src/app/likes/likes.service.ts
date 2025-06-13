@@ -5,9 +5,7 @@ import { CreateLikeDto } from './like.dto';
 import { LikeDocument, Like } from '@app/models/like.schema';
 @Injectable()
 export class LikeService {
-  constructor(
-    @InjectModel(Like.name) private likeModel: Model<LikeDocument>,
-  ) {}
+  constructor(@InjectModel(Like.name) private likeModel: Model<LikeDocument>) {}
 
   async toggleLike(dto: CreateLikeDto): Promise<{ liked: boolean }> {
     const existing = await this.likeModel.findOne({ postId: dto.postId, userId: dto.userId });

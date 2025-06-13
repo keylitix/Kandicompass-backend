@@ -25,7 +25,7 @@ export class CommentsController {
   }
 
   @Delete(':id')
-  @ApiOperation({summary: 'Delete comment using comment ID'})
+  @ApiOperation({ summary: 'Delete comment using comment ID' })
   delete(@Param('id') id: string) {
     return this.commentsService.deleteComment(id);
   }

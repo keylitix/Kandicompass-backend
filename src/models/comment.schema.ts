@@ -7,9 +7,9 @@ export type CommentDocument = Comment & Document;
 export class Comment {
   @Prop({ required: true }) postId: string;
   @Prop({ required: true }) userId: string;
-  @Prop({ required: true }) userName: string;
-  @Prop({ required: true }) userAvatar: string;
-  @Prop({ required: true }) message: string;
+
+  @Prop({ required: false, default: Date.now() })
+  created_at: Date;
 }
 
 export const CommentSchema = SchemaFactory.createForClass(Comment);
