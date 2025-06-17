@@ -112,8 +112,6 @@ export class BeadsService {
       beadName: bead.beadName,
       beadImage: bead.images?.[0] ?? '/bead-image.png',
       userId: bead.ownerId.toString(),
-      userName: user?.fullName ?? 'User',
-      userAvatar: user?.profilePicture ?? '/avatar.png',
       content: [
         {
           type: 'text',
@@ -478,6 +476,173 @@ export class BeadsService {
     ]);
 
     return beads;
+  }
+
+  async getFeedPosts(
+    page_number: number = 1,
+    page_size: number = 10,
+  ): Promise<{
+    data: FeedPost[];
+    pagination: {
+      total: number;
+      page: number;
+      pageSize: number;
+      totalPages: number;
+    };
+  }> {
+    const skip = (page_number - 1) * page_size;
+
+    const total = await this.feedPostModel.countDocuments();
+
+    const feedPosts = await this.feedPostModel.aggregate([
+      {
+        $sort: { createdAt: -1 },
+      },
+      {
+        $skip: skip,
+      },
+      {
+        $limit: page_size,
+      },
+      {
+        $lookup: {
+          from: 'beads',
+          localField: 'beadId',
+          foreignField: '_id',
+          as: 'beadId',
+        },
+      },
+      {
+        $unwind: {
+          path: '$beadId',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'userId',
+          foreignField: '_id',
+          as: 'userId',
+        },
+      },
+      {
+        $unwind: {
+          path: '$userId',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      // {
+      //   $project: {
+      //     type: 1,
+      //     beadId: 1,
+      //     beadName: 1,
+      //     beadImage: 1,
+      //     userId: 1,
+      //     content: 1,
+      //     location: 1,
+      //     createdAt: 1,
+      //     updatedAt: 1,
+      //     beadDetails: {
+      //       beadName: 1,
+      //       description: 1,
+      //       images: 1,
+      //       qrCode: 1
+      //     },
+      //     userDetails: {
+      //       username: 1,
+      //       avatar: 1,
+      //       firstName: 1,
+      //       lastName: 1
+      //     }
+      //   }
+      // }
+    ]);
+
+    return {
+      data: feedPosts,
+      pagination: {
+        total,
+        page: page_number,
+        pageSize: page_size,
+        totalPages: Math.ceil(total / page_size),
+      },
+    };
+  }
+
+  async getFeedById(id: string): Promise<any> {
+    if (!Types.ObjectId.isValid(id)) {
+      throw new HttpException('Invalid feed ID', HttpStatus.BAD_REQUEST);
+    }
+
+    const feedPost = await this.feedPostModel.aggregate([
+      {
+        $match: {
+          _id: new Types.ObjectId(id),
+        },
+      },
+      {
+        $lookup: {
+          from: 'beads',
+          localField: 'beadId',
+          foreignField: '_id',
+          as: 'beadId',
+        },
+      },
+      {
+        $unwind: {
+          path: '$beadId',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'userId',
+          foreignField: '_id',
+          as: 'userId',
+        },
+      },
+      {
+        $unwind: {
+          path: '$userId',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      // {
+      //   $project: {
+      //     type: 1,
+      //     beadId: 1,
+      //     beadName: 1,
+      //     beadImage: 1,
+      //     userId: 1,
+      //     content: 1,
+      //     location: 1,
+      //     createdAt: 1,
+      //     updatedAt: 1,
+      //     beadDetails: {
+      //       beadName: 1,
+      //       description: 1,
+      //       images: 1,
+      //       qrCode: 1,
+      //       threadId: 1,
+      //       ownerId: 1
+      //     },
+      //     userDetails: {
+      //       username: 1,
+      //       avatar: 1,
+      //       firstName: 1,
+      //       lastName: 1
+      //     }
+      //   }
+      // }
+    ]);
+
+    if (!feedPost || feedPost.length === 0) {
+      throw new HttpException('Feed post not found', HttpStatus.NOT_FOUND);
+    }
+
+    return feedPost[0];
   }
 
   // async removeAllBeads(): Promise<void> {

@@ -1,32 +1,26 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import mongoose, { Document, Types } from 'mongoose';
 
 export type FeedPostDocument = FeedPost & Document;
 
 @Schema({ timestamps: true })
 export class FeedPost {
-  @Prop({ required: true })
+  @Prop({ required: false })
   type: 'bead_created' | 'ownership_transfer';
 
-  @Prop({ required: true })
-  beadId: string;
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Bead', required: false })
+  beadId: Types.ObjectId;
 
-  @Prop({ required: true })
+  @Prop({ required: false })
   beadName: string;
 
-  @Prop({ required: true })
+  @Prop({ required: false })
   beadImage: string;
 
-  @Prop({ required: true })
-  userId: string;
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: false })
+  userId: Types.ObjectId;
 
-  @Prop({ required: true })
-  userName: string;
-
-  @Prop({ required: true })
-  userAvatar: string;
-
-  @Prop({ type: [{ type: Object }], required: true })
+  @Prop({ type: [{ type: Object }], required: false })
   content: ContentBlock[];
 
   @Prop({ type: Object })

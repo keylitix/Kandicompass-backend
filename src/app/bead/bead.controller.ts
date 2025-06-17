@@ -16,7 +16,7 @@ import {
 } from '@nestjs/common';
 import { BeadsService } from './bead.service';
 import { ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
-import { createBeadDto, PagingQueryDto, BeadUpdateDto } from './bead.dto';
+import { createBeadDto, BeadUpdateDto } from './bead.dto';
 import { MessageResponseInterceptor, ResponseInterceptor } from 'src/helpers/interceptors/respone.interceptor';
 import { ResponseMessage } from 'src/helpers/decorators/response.message';
 import { diskStorage } from 'multer';
@@ -132,6 +132,23 @@ export class BeadsController {
   async exploreBeads(@Query('limit') limit: number) {
     const result = await this.beadService.exploreBeads(limit || 50);
     return { beads: result };
+  }
+
+  @Get('/feed')
+  @UseInterceptors(ResponseInterceptor)
+  @ResponseMessage('Feed fetched successfully')
+  async getFeed(
+    @Query('page_number', ParseIntPipe) page_number: number = 1,
+    @Query('page_size', ParseIntPipe) page_size: number = 10,
+  ) {
+    return await this.beadService.getFeedPosts(page_number, page_size);
+  }
+
+  @Get('/feed/:id')
+  @UseInterceptors(ResponseInterceptor)
+  @ResponseMessage('Feed post fetched successfully')
+  async getFeedById(@Param('id') id: string) {
+    return await this.beadService.getFeedById(id);
   }
 
   // @Delete('/deleteAll')
