@@ -1,15 +1,21 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, Types } from 'mongoose';
 
 export type CommentDocument = Comment & Document;
 
 @Schema({ timestamps: true })
 export class Comment {
-  @Prop({ required: true }) postId: string;
-  @Prop({ required: true }) userId: string;
+  @Prop({ type: Types.ObjectId, ref: 'FeedPost', required: true })
+  feedPostId: Types.ObjectId;
 
-  @Prop({ required: false, default: Date.now() })
-  created_at: Date;
+  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
+  userId: Types.ObjectId;
+
+  @Prop({ required: true })
+  text: string;
+
+  @Prop({ default: Date.now })
+  createdAt: Date;
 }
 
 export const CommentSchema = SchemaFactory.createForClass(Comment);

@@ -1,4 +1,4 @@
-import { IsString, IsArray, IsOptional, ValidateNested, IsNumber } from 'class-validator';
+import { IsString, IsArray, IsOptional, ValidateNested, IsNumber, IsMongoId } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -36,4 +36,20 @@ export class CreateFeedPostDto {
   @ValidateNested()
   @Type(() => LocationDto)
   location?: LocationDto;
+}
+
+export class LikeDto {
+  @ApiProperty()
+  @IsMongoId()
+  userId: string;
+}
+
+export class CommentDto {
+  @ApiProperty()
+  @IsMongoId()
+  userId: string;
+
+  @ApiProperty()
+  @IsString()
+  text: string;
 }
