@@ -15,12 +15,13 @@ import {
   ParseIntPipe,
 } from '@nestjs/common';
 import { BeadsService } from './bead.service';
-import { ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiConsumes, ApiParam, ApiTags } from '@nestjs/swagger';
 import { createBeadDto, BeadUpdateDto } from './bead.dto';
 import { MessageResponseInterceptor, ResponseInterceptor } from 'src/helpers/interceptors/respone.interceptor';
 import { ResponseMessage } from 'src/helpers/decorators/response.message';
 import { diskStorage } from 'multer';
 import { FilesInterceptor } from '@nestjs/platform-express';
+import { CommentDto, LikeDto } from '../feed/feed.dto';
 
 @Controller('beads')
 @ApiTags('beads')
@@ -151,6 +152,48 @@ export class BeadsController {
     return await this.beadService.getFeedById(id);
   }
 
+  @Post('/feed/:id/like')
+  @UseInterceptors(ResponseInterceptor)
+  @ResponseMessage('Post liked successfully')
+  @ApiParam({ name: 'id', description: 'Feed post ID' })
+  @ApiBody({ type: LikeDto })
+  async likePost(@Param('id') feedPostId: string, @Body() likeDto: LikeDto) {
+    return await this.beadService.likeFeedPost(feedPostId, likeDto.userId);
+  }
+
+  @Delete('/feed/:id/unlike')
+  @UseInterceptors(ResponseInterceptor)
+  @ResponseMessage('Post unliked successfully')
+  @ApiParam({ name: 'id', description: 'Feed post ID' })
+  @ApiBody({ type: LikeDto })
+  async unlikePost(@Param('id') feedPostId: string, @Body() likeDto: LikeDto) {
+    return await this.beadService.unlikeFeedPost(feedPostId, likeDto.userId);
+  }
+
+  @Post('/feed/:id/comment')
+  @UseInterceptors(ResponseInterceptor)
+  @ResponseMessage('Comment added successfully')
+  @ApiParam({ name: 'id', description: 'Feed post ID' })
+  @ApiBody({ type: CommentDto })
+  async addComment(@Param('id') feedPostId: string, @Body() commentDto: CommentDto) {
+    return await this.beadService.addComment(feedPostId, commentDto.userId, commentDto.text);
+  }
+
+  @Get('/feed/:id/likes')
+  @UseInterceptors(ResponseInterceptor)
+  @ResponseMessage('Likes fetched successfully')
+  @ApiParam({ name: 'id', description: 'Feed post ID' })
+  async getLikesByFeedId(@Param('id') feedPostId: string) {
+    return await this.beadService.getLikesByFeedId(feedPostId);
+  }
+
+  @Get('/feed/:id/comments')
+  @UseInterceptors(ResponseInterceptor)
+  @ResponseMessage('Comments fetched successfully')
+  @ApiParam({ name: 'id', description: 'Feed post ID' })
+  async getCommentsByFeedId(@Param('id') feedPostId: string) {
+    return await this.beadService.getCommentsByFeedId(feedPostId);
+  }
   // @Delete('/deleteAll')
   // @UseInterceptors(MessageResponseInterceptor)
   // @ResponseMessage('All beads removed')

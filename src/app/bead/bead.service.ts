@@ -11,6 +11,8 @@ import * as fs from 'fs';
 import { Thread } from '@app/models/thread.schema';
 import { FeedPost } from '@app/models/feed.schema';
 import { User } from '@app/models/user.schema';
+import { Like } from '@app/models/like.schema';
+import { Comment } from '@app/models/comment.schema';
 
 @Injectable()
 export class BeadsService {
@@ -20,6 +22,8 @@ export class BeadsService {
     @InjectModel(Thread.name) private threadModel: Model<Thread>,
     @InjectModel(FeedPost.name) private feedPostModel: Model<FeedPost>,
     @InjectModel(User.name) private userModel: Model<User>,
+    @InjectModel(Like.name) private likeModel: Model<Like>,
+    @InjectModel(Comment.name) private commentModel: Model<Comment>,
   ) {}
 
   private async generateQRCode(beadData: any, beadId: string): Promise<string> {
@@ -645,6 +649,159 @@ export class BeadsService {
     return feedPost[0];
   }
 
+  async likeFeedPost(feedPostId: string, userId: string): Promise<Like> {
+    if (!Types.ObjectId.isValid(feedPostId) || !Types.ObjectId.isValid(userId)) {
+      throw new HttpException('Invalid IDs', HttpStatus.BAD_REQUEST);
+    }
+
+    const existingLike = await this.likeModel.findOne({
+      feedPostId: new Types.ObjectId(feedPostId),
+      userId: new Types.ObjectId(userId),
+    });
+
+    if (existingLike) {
+      throw new HttpException('Already liked this post', HttpStatus.BAD_REQUEST);
+    }
+
+    return await this.likeModel.create({
+      feedPostId: new Types.ObjectId(feedPostId),
+      userId: new Types.ObjectId(userId),
+    });
+  }
+
+  async unlikeFeedPost(feedPostId: string, userId: string): Promise<{ message: string }> {
+    if (!Types.ObjectId.isValid(feedPostId) || !Types.ObjectId.isValid(userId)) {
+      throw new HttpException('Invalid IDs', HttpStatus.BAD_REQUEST);
+    }
+
+    const result = await this.likeModel.findOneAndDelete({
+      feedPostId: new Types.ObjectId(feedPostId),
+      userId: new Types.ObjectId(userId),
+    });
+
+    if (!result) {
+      throw new HttpException('Like not found', HttpStatus.NOT_FOUND);
+    }
+
+    return { message: 'Post unliked successfully' };
+  }
+
+  async addComment(feedPostId: string, userId: string, text: string): Promise<Comment> {
+    if (!Types.ObjectId.isValid(feedPostId) || !Types.ObjectId.isValid(userId)) {
+      throw new HttpException('Invalid IDs', HttpStatus.BAD_REQUEST);
+    }
+
+    if (!text || text.trim().length === 0) {
+      throw new HttpException('Comment text cannot be empty', HttpStatus.BAD_REQUEST);
+    }
+
+    return await this.commentModel.create({
+      feedPostId: new Types.ObjectId(feedPostId),
+      userId: new Types.ObjectId(userId),
+      text: text.trim(),
+    });
+  }
+
+  async getLikesByFeedId(feedPostId: string): Promise<{ likes: any[]; count: number }> {
+    if (!Types.ObjectId.isValid(feedPostId)) {
+      throw new HttpException('Invalid feed post ID', HttpStatus.BAD_REQUEST);
+    }
+
+    const feedPostExists = await this.feedPostModel.exists({ _id: new Types.ObjectId(feedPostId) });
+    if (!feedPostExists) {
+      throw new HttpException('Feed post not found', HttpStatus.NOT_FOUND);
+    }
+
+    const likes = await this.likeModel.aggregate([
+      {
+        $match: {
+          feedPostId: new Types.ObjectId(feedPostId),
+        },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'userId',
+          foreignField: '_id',
+          as: 'userId',
+        },
+      },
+      {
+        $unwind: {
+          path: '$userId',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $lookup: {
+          from: 'feedposts',
+          localField: 'feedPostId',
+          foreignField: '_id',
+          as: 'feedPostId',
+        },
+      },
+      {
+        $unwind: '$feedPostId',
+      },
+    ]);
+
+    return {
+      likes,
+      count: likes.length,
+    };
+  }
+
+  async getCommentsByFeedId(feedPostId: string): Promise<{ comments: any[]; count: number }> {
+    if (!Types.ObjectId.isValid(feedPostId)) {
+      throw new HttpException('Invalid feed post ID', HttpStatus.BAD_REQUEST);
+    }
+
+    const feedPostExists = await this.feedPostModel.exists({ _id: new Types.ObjectId(feedPostId) });
+    if (!feedPostExists) {
+      throw new HttpException('Feed post not found', HttpStatus.NOT_FOUND);
+    }
+
+    const comments = await this.commentModel.aggregate([
+      {
+        $match: {
+          feedPostId: new Types.ObjectId(feedPostId),
+        },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'userId',
+          foreignField: '_id',
+          as: 'userId',
+        },
+      },
+      {
+        $unwind: {
+          path: '$userId',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $lookup: {
+          from: 'feedposts',
+          localField: 'feedPostId',
+          foreignField: '_id',
+          as: 'feedPostId',
+        },
+      },
+      {
+        $unwind: '$feedPostId',
+      },
+      {
+        $sort: { createdAt: -1 },
+      },
+    ]);
+
+    return {
+      comments,
+      count: comments.length,
+    };
+  }
   // async removeAllBeads(): Promise<void> {
   //   await this.beadModel.deleteMany({}, { $set: { is_deleted: true } });
   // }
